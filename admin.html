@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin · Villa Paraíso</title>
+  <link rel="icon" type="image/png" href="img/logo.png" />
+  <link rel="stylesheet" href="admin.css" />
+  <link href="https://fonts.bunny.net/css?family=cinzel:400,600,700|poppins:300,400,500,600" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- 🔒 LOGIN -->
+  <div id="loginScreen" class="login-screen">
+    <div class="login-card">
+      <img src="img/logo.png" alt="Logo" class="login-logo" />
+      <h1>Panel de Administración</h1>
+      <p class="login-sub">Villa Paraíso Guardalavaca</p>
+
+      <form id="loginForm">
+        <input type="email" id="email" placeholder="Correo electrónico" required />
+        <input type="password" id="password" placeholder="Contraseña" required />
+        <button type="submit" class="btn-primary">Iniciar sesión</button>
+      </form>
+      <p id="loginError" class="login-error"></p>
+    </div>
+  </div>
+
+  <!-- 🛠️ PANEL -->
+  <div id="adminScreen" class="admin-screen hidden">
+
+    <header class="admin-header">
+      <div class="admin-header-left">
+        <img src="img/logo.png" alt="Logo" class="admin-logo" />
+        <div>
+          <h1>Panel de Control</h1>
+          <p>Villa Paraíso Guardalavaca</p>
+        </div>
+      </div>
+      <div class="admin-header-right">
+        <span id="userEmail" class="user-email"></span>
+        <button id="logoutBtn" class="btn-secondary">Cerrar sesión</button>
+      </div>
+    </header>
+
+    <div id="statusBar" class="status-bar hidden">
+      <span id="statusText">Cambios sin guardar</span>
+      <button id="saveBtn" class="btn-primary">💾 Guardar cambios</button>
+    </div>
+
+    <main class="admin-main">
+
+      <!-- 🏠 CONFIGURACIÓN DEL SITIO -->
+      <section class="site-config">
+        <h2 class="site-config-title">🏠 Textos de la Portada y el Pie de Página</h2>
+        <p class="site-config-help">
+          Cambia aquí los textos que ven los clientes al abrir la carta. 
+          Solo escribe el texto que quieras mostrar.
+        </p>
+
+        <h3 class="site-config-subtitle">📌 Encabezado de la página</h3>
+        <div class="site-config-grid">
+          <div class="site-field">
+            <label>Nombre del restaurante</label>
+            <input type="text" id="site-nombre" placeholder="Villa Paraíso" />
+          </div>
+          <div class="site-field">
+            <label>Ubicación / Ciudad</label>
+            <input type="text" id="site-subtitulo" placeholder="Guardalavaca" />
+          </div>
+          <div class="site-field full">
+            <label>Descripción corta</label>
+            <input type="text" id="site-tagline" placeholder="Cocina del mar & parrilla" />
+          </div>
+          <div class="site-field">
+            <label>Horario de apertura</label>
+            <input type="text" id="site-horas" placeholder="🕐 12:00 - 23:00" />
+          </div>
+          <div class="site-field">
+            <label>WiFi (opcional)</label>
+            <input type="text" id="site-wifi" placeholder="📶 WiFi: VillaParaiso" />
+          </div>
+        </div>
+
+        <h3 class="site-config-subtitle">📌 Pie de página</h3>
+        <div class="site-config-grid">
+          <div class="site-field full">
+            <label>Mensaje de agradecimiento</label>
+            <input type="text" id="site-footerMensaje" 
+                   placeholder="Ejemplo: Gracias por preferirnos" />
+          </div>
+          <div class="site-field full">
+            <label>Frase secundaria (opcional)</label>
+            <input type="text" id="site-footerSub" 
+                   placeholder="Ejemplo: Será un placer atenderle" />
+          </div>
+          <div class="site-field full">
+            <label>Texto de copyright</label>
+            <input type="text" id="site-footerCopy" 
+                   placeholder="Ejemplo: © 2025 Villa Paraíso Guardalavaca" />
+          </div>
+        </div>
+      </section>
+
+      <!-- 🍽️ CATEGORÍAS -->
+      <div class="admin-actions">
+        <button id="addCategoryBtn" class="btn-add">+ Añadir categoría</button>
+        <button id="reloadBtn" class="btn-secondary">🔄 Recargar</button>
+        <a href="index.html" target="_blank" class="btn-secondary">👁️ Ver menú</a>
+      </div>
+
+      <div id="categoriesContainer" class="categories-container"></div>
+    </main>
+
+  </div>
+
+  <script type="module" src="admin.js"></script>
+</body>
+</html>
