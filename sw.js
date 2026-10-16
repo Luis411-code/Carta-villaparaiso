@@ -3,7 +3,7 @@
 // Recibe notificaciones push y las muestra al mesero
 // =====================================================
 
-const CACHE_NAME = 'villa-paraiso-v2';
+const CACHE_NAME = 'villa-paraiso-v3';
 const URLS_TO_CACHE = [
   '/',
   '/index.html',
