@@ -1,6 +1,9 @@
 // =====================================================
 // 🧑‍🍳 PANEL DEL MESERO - VILLA PARAÍSO GUARDALAVACA
-// Con protección anti-bucle y manejo correcto de sesión
+// Arquitectura de 3 capas de notificación:
+//   1. WebSocket robusto (realtime + watchdog)
+//   2. Notificaciones push (respaldo)
+//   3. Auto-refresh (garantía)
 // =====================================================
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './supabase-config.js';
@@ -22,6 +25,8 @@ let filtroActual = 'activos';
 let realtimeChannel = null;
 let realtimeActivo = false;
 let timerActualizar = null;
+let timerWatchdog = null;
+let timerAutoRefresh = null;
 let sesionActiva = false;
 
 // 🔔 Estado de notificaciones (evita re-registro)
@@ -79,7 +84,6 @@ supabase.auth.getSession().then(({ data: { session } }) => {
 supabase.auth.onAuthStateChange((event, session) => {
   console.log('Auth event:', event);
 
-  // ✅ Solo reaccionar a login/logout reales
   if (event === 'SIGNED_IN' && session) {
     if (!sesionActiva) activarSesion(session);
   } else if (event === 'SIGNED_OUT') {
@@ -99,10 +103,14 @@ function mostrarLogin() {
     realtimeChannel = null;
     realtimeActivo = false;
   }
+
+  // Detener timers
+  if (timerActualizar) { clearInterval(timerActualizar); timerActualizar = null; }
+  if (timerWatchdog) { clearInterval(timerWatchdog); timerWatchdog = null; }
+  if (timerAutoRefresh) { clearInterval(timerAutoRefresh); timerAutoRefresh = null; }
 }
 
 async function activarSesion(session) {
-  // 🛡️ Si ya estaba activa, ignorar
   if (sesionActiva) {
     console.log('ℹ️ Sesión ya activa, ignorando duplicado');
     return;
@@ -116,18 +124,57 @@ async function activarSesion(session) {
   await cargarPedidos();
   suscribirRealtime();
 
-  // Actualizar "hace X min" cada 60 segundos
+  // =================================================
+  // 🕐 TIMER 1: Actualizar "hace X min" cada 60 seg
+  // =================================================
   if (timerActualizar) clearInterval(timerActualizar);
   timerActualizar = setInterval(() => {
     renderPedidos();
     actualizarStats();
   }, 60000);
 
-  // Verificar notificaciones (solo si no está ya registrado)
+  // =================================================
+  // 🛡️ TIMER 2: Watchdog — Reconectar WebSocket si se cayó
+  // =================================================
+  if (timerWatchdog) clearInterval(timerWatchdog);
+  timerWatchdog = setInterval(() => {
+    if (sesionActiva && !realtimeActivo) {
+      console.log('🔄 Watchdog: canal inactivo, reconectando...');
+      suscribirRealtime();
+    }
+  }, 20000); // cada 20 segundos
+
+  // =================================================
+  // 🔄 TIMER 3: Auto-refresh — Garantía absoluta
+  // =================================================
+  if (timerAutoRefresh) clearInterval(timerAutoRefresh);
+  timerAutoRefresh = setInterval(() => {
+    if (document.visibilityState === 'visible' && sesionActiva) {
+      console.log('🔄 Auto-refresh periódico...');
+      cargarPedidos();
+      actualizarStats();
+    }
+  }, 15000); // cada 15 segundos
+
+  // Verificar notificaciones
   setTimeout(() => {
     if (!yaRegistrado) verificarNotificaciones();
   }, 1000);
 }
+
+// =====================================================
+// 👁️ VISIBILITY CHANGE — Reconectar al volver a la pestaña
+// =====================================================
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && sesionActiva) {
+    console.log('👁️ Pestaña visible, verificando conexión...');
+    if (!realtimeActivo) {
+      suscribirRealtime();
+    }
+    cargarPedidos();
+    actualizarStats();
+  }
+});
 
 // =====================================================
 // 🔔 NOTIFICACIONES PUSH
@@ -167,7 +214,6 @@ activarNotifBtn.onclick = async () => {
 };
 
 async function registrarNotificaciones() {
-  // 🛡️ Evitar llamadas repetidas
   if (registrandoNotif || yaRegistrado) {
     console.log('ℹ️ Notificaciones ya registradas o en proceso');
     return;
@@ -252,7 +298,6 @@ async function cargarPedidos() {
 
   } catch (err) {
     console.error('Error al cargar pedidos:', err);
-    mostrarToast('❌ Error', 'No se pudieron cargar los pedidos', 'error');
   }
 }
 
