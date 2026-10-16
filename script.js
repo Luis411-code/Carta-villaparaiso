@@ -1,6 +1,5 @@
 // =====================================================
-// 🍽️  MENÚ DIGITAL - VILLA PARAÍSO GUARDALAVACA
-// Supabase + filtro de disponibilidad + galería expandible
+// 🍽️  MENÚ DIGITAL + CARRITO - VILLA PARAÍSO GUARDALAVACA
 // =====================================================
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './supabase-config.js';
@@ -9,17 +8,22 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // =====================================================
+// 📦 ESTADO GLOBAL
+// =====================================================
+let menuData = { categories: [] };
+let mesaActual = null;
+let carrito = [];
+
+const CARRITO_KEY = 'villa-paraiso-carrito';
+const MESA_KEY = 'villa-paraiso-mesa';
+
+// =====================================================
 // 🔁 MENÚ DE RESPALDO
 // =====================================================
 const fallbackMenu = {
   categories: [
     { categoria: "Entrantes", icono: "🥗", items: [
       { nombre: "Croquetas de Jamón", precio: 120, descripcion: "5 unidades." }
-    ]},
-    { categoria: "Platos Principales", icono: "🍽️", subgrupos: [
-      { titulo: "Cerdo", items: [
-        { nombre: "Lechón Asado", precio: 280, descripcion: "Con mojo criollo." }
-      ]}
     ]}
   ]
 };
@@ -30,13 +34,26 @@ const fallbackMenu = {
 const categoriesNav = document.getElementById('categories');
 const menuContainer = document.getElementById('menu');
 
+const cartBtn = document.getElementById('cartBtn');
+const cartCount = document.getElementById('cartCount');
+const cartOverlay = document.getElementById('cartOverlay');
+const cartClose = document.getElementById('cartClose');
+const cartItems = document.getElementById('cartItems');
+const cartTotal = document.getElementById('cartTotal');
+const cartEnviar = document.getElementById('cartEnviar');
+const cartNotas = document.getElementById('cartNotas');
+
+const mesaBanner = document.getElementById('mesaBanner');
+const mesaNumero = document.getElementById('mesaNumero');
+
+const toast = document.getElementById('toast');
+const toastTitle = document.getElementById('toastTitle');
+const toastMsg = document.getElementById('toastMsg');
+
 // =====================================================
 // 🛠️ HELPERS
 // =====================================================
-const formatPrice = (price) => {
-  const num = Number(price) || 0;
-  return `$${num.toFixed(2)}`;
-};
+const formatPrice = (price) => `$${(Number(price) || 0).toFixed(2)}`;
 
 const escapeHTML = (text) => {
   if (!text) return '';
@@ -48,7 +65,254 @@ const escapeHTML = (text) => {
 const estaDisponible = (item) => item.disponible !== false;
 
 // =====================================================
-// 🎨 RENDERIZAR ICONO (emoji o imagen/GIF)
+// 🍽️ DETECTAR MESA DESDE LA URL
+// =====================================================
+function detectarMesa() {
+  const params = new URLSearchParams(window.location.search);
+  const mesa = params.get('mesa');
+
+  if (mesa && mesa.trim()) {
+    mesaActual = mesa.trim();
+    localStorage.setItem(MESA_KEY, mesaActual);
+    mesaNumero.textContent = mesaActual;
+    mesaBanner.classList.remove('hidden');
+    document.body.classList.add('has-mesa');
+    cartBtn.classList.remove('hidden');
+    console.log(`✅ Mesa detectada: ${mesaActual}`);
+  } else {
+    mesaActual = null;
+    localStorage.removeItem(MESA_KEY);
+    mesaBanner.classList.add('hidden');
+    cartBtn.classList.add('hidden');
+    document.body.classList.remove('has-mesa');
+    console.log('ℹ️ Sin mesa asignada — modo solo consulta');
+  }
+}
+
+// =====================================================
+// 🛒 CARRITO — Persistencia
+// =====================================================
+function cargarCarrito() {
+  try {
+    const saved = localStorage.getItem(CARRITO_KEY);
+    carrito = saved ? JSON.parse(saved) : [];
+    if (!Array.isArray(carrito)) carrito = [];
+  } catch (e) {
+    carrito = [];
+  }
+}
+
+function guardarCarrito() {
+  localStorage.setItem(CARRITO_KEY, JSON.stringify(carrito));
+  actualizarUI();
+}
+
+function limpiarCarrito() {
+  carrito = [];
+  localStorage.removeItem(CARRITO_KEY);
+  if (cartNotas) cartNotas.value = '';
+  actualizarUI();
+}
+
+function calcularTotal() {
+  return carrito.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
+}
+
+function contarItems() {
+  return carrito.reduce((sum, item) => sum + item.cantidad, 0);
+}
+
+// =====================================================
+// 🛒 CARRITO — Operaciones
+// =====================================================
+function agregarAlCarrito(nombre, precio) {
+  const existente = carrito.find(i => i.nombre === nombre);
+  if (existente) {
+    existente.cantidad += 1;
+  } else {
+    carrito.push({ nombre, precio: Number(precio) || 0, cantidad: 1 });
+  }
+  guardarCarrito();
+  mostrarToast('✅ Añadido', `${nombre} agregado a tu pedido`, false);
+}
+
+function cambiarCantidad(nombre, delta) {
+  const item = carrito.find(i => i.nombre === nombre);
+  if (!item) return;
+  item.cantidad += delta;
+  if (item.cantidad <= 0) {
+    carrito = carrito.filter(i => i.nombre !== nombre);
+  }
+  guardarCarrito();
+}
+
+function eliminarDelCarrito(nombre) {
+  carrito = carrito.filter(i => i.nombre !== nombre);
+  guardarCarrito();
+}
+
+// =====================================================
+// 🎨 CARRITO — Actualizar UI
+// =====================================================
+function actualizarUI() {
+  // Contador del botón
+  const total = contarItems();
+  if (total > 0) {
+    cartCount.textContent = total;
+    cartCount.classList.remove('hidden');
+  } else {
+    cartCount.classList.add('hidden');
+  }
+
+  // Items
+  if (carrito.length === 0) {
+    cartItems.innerHTML = `
+      <div class="cart-empty">
+        <span class="cart-empty-icon">🛒</span>
+        Tu pedido está vacío
+      </div>
+    `;
+    cartEnviar.disabled = true;
+  } else {
+    cartItems.innerHTML = carrito.map(item => `
+      <div class="cart-item">
+        <div class="cart-item-info">
+          <div class="cart-item-nombre">${escapeHTML(item.nombre)}</div>
+          <div class="cart-item-precio">${formatPrice(item.precio)} c/u</div>
+        </div>
+        <div class="cart-item-qty">
+          <button class="cart-qty-btn menos" data-nombre="${escapeHTML(item.nombre)}" data-delta="-1" aria-label="Restar">−</button>
+          <span class="cart-item-cantidad">${item.cantidad}</span>
+          <button class="cart-qty-btn mas" data-nombre="${escapeHTML(item.nombre)}" data-delta="1" aria-label="Sumar">+</button>
+        </div>
+        <div class="cart-item-subtotal">${formatPrice(item.precio * item.cantidad)}</div>
+        <button class="cart-item-eliminar" data-nombre="${escapeHTML(item.nombre)}" title="Eliminar">🗑️</button>
+      </div>
+    `).join('');
+
+    // Handlers de cantidad con animación
+    cartItems.querySelectorAll('.cart-qty-btn').forEach(btn => {
+      btn.onclick = () => {
+        const nombre = btn.dataset.nombre;
+        const delta = parseInt(btn.dataset.delta, 10);
+
+        const itemEl = btn.closest('.cart-item');
+        const counter = itemEl?.querySelector('.cart-item-cantidad');
+        if (counter) {
+          counter.classList.add('bump');
+          setTimeout(() => counter.classList.remove('bump'), 350);
+        }
+
+        cambiarCantidad(nombre, delta);
+      };
+    });
+
+    // Handlers de eliminar
+    cartItems.querySelectorAll('.cart-item-eliminar').forEach(btn => {
+      btn.onclick = () => {
+        const nombre = btn.dataset.nombre;
+        if (confirm(`¿Eliminar "${nombre}" del pedido?`)) {
+          eliminarDelCarrito(nombre);
+        }
+      };
+    });
+
+    cartEnviar.disabled = false;
+  }
+
+  // Total
+  cartTotal.textContent = formatPrice(calcularTotal());
+
+  // Botones "Añadir" del menú
+  document.querySelectorAll('.btn-add-item').forEach(btn => {
+    const nombre = btn.dataset.nombre;
+    const enCarrito = carrito.some(i => i.nombre === nombre);
+    if (enCarrito) {
+      btn.classList.add('added');
+      btn.textContent = '✓ En el pedido';
+    } else {
+      btn.classList.remove('added');
+      btn.textContent = '+ Añadir';
+    }
+  });
+}
+
+// =====================================================
+// 🍞 TOAST
+// =====================================================
+let toastTimer = null;
+function mostrarToast(titulo, mensaje, esError = false) {
+  toastTitle.textContent = titulo;
+  toastMsg.textContent = mensaje;
+  toast.classList.toggle('toast-error', esError);
+  toast.classList.remove('hidden');
+
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    toast.classList.add('hidden');
+  }, 3500);
+}
+
+// =====================================================
+// 📤 ENVIAR PEDIDO A SUPABASE
+// =====================================================
+async function enviarPedido() {
+  if (!mesaActual) {
+    mostrarToast('❌ Error', 'No se detectó la mesa. Escanea el QR de tu mesa.', true);
+    return;
+  }
+
+  if (carrito.length === 0) {
+    mostrarToast('⚠️ Pedido vacío', 'Añade algo antes de enviar', true);
+    return;
+  }
+
+  cartEnviar.disabled = true;
+  cartEnviar.classList.add('enviando');
+  cartEnviar.textContent = '⏳ Enviando...';
+
+  try {
+    const total = calcularTotal();
+    const notas = cartNotas.value.trim();
+
+    const { data, error } = await supabase
+      .from('pedidos')
+      .insert({
+        mesa: mesaActual,
+        items: carrito,
+        total: total,
+        notas: notas,
+        estado: 'pendiente'
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    console.log('✅ Pedido enviado:', data);
+
+    cartEnviar.textContent = '✅ ¡Enviado!';
+    mostrarToast('🎉 ¡Pedido enviado!', `Mesa ${mesaActual} · Tu mesero lo recibirá en un momento`, false);
+
+    setTimeout(() => {
+      limpiarCarrito();
+      cerrarCarrito();
+      cartEnviar.classList.remove('enviando');
+      cartEnviar.textContent = '🍽️ Enviar pedido al mesero';
+      cartEnviar.disabled = false;
+    }, 1200);
+
+  } catch (err) {
+    console.error('❌ Error al enviar pedido:', err);
+    cartEnviar.disabled = false;
+    cartEnviar.classList.remove('enviando');
+    cartEnviar.textContent = '🍽️ Enviar pedido al mesero';
+    mostrarToast('❌ No se pudo enviar', 'Revisa tu conexión e inténtalo de nuevo', true);
+  }
+}
+
+// =====================================================
+// 🎨 RENDERIZAR ICONO
 // =====================================================
 function renderIconHTML(obj, size = '1.1em') {
   if (obj.iconoImg) {
@@ -63,16 +327,14 @@ function renderIconHTML(obj, size = '1.1em') {
 }
 
 // =====================================================
-// 🎨 APLICAR CONFIGURACIÓN DEL SITIO (hero + footer)
+// 🎨 CONFIGURACIÓN DEL SITIO
 // =====================================================
 function applySiteConfig(site) {
   if (!site) return;
 
   const setText = (id, val) => {
     const el = document.getElementById(id);
-    if (el && val !== undefined && val !== null && val !== '') {
-      el.textContent = val;
-    }
+    if (el && val) el.textContent = val;
   };
 
   setText('heroNombre', site.nombre);
@@ -83,13 +345,9 @@ function applySiteConfig(site) {
   setText('footerSub', site.footerSub);
   setText('footerCopy', site.footerCopy);
 
-  // ✅ Mensaje del footer: texto plano + nombre en negrita dorada automática
   const footerMsg = document.getElementById('footerMensaje');
   if (footerMsg && site.footerMensaje) {
-    // Limpiamos cualquier HTML que haya quedado guardado por error
     const textoLimpio = String(site.footerMensaje).replace(/<[^>]*>/g, '').trim();
-
-    // Si el nombre del restaurante aparece en el mensaje, lo ponemos en negrita dorada
     const nombre = site.nombre || '';
     if (nombre && textoLimpio.includes(nombre)) {
       const partes = textoLimpio.split(nombre);
@@ -118,10 +376,8 @@ function applySiteConfig(site) {
 }
 
 // =====================================================
-// 📥 CARGAR MENÚ DESDE SUPABASE
+// 📥 CARGAR MENÚ
 // =====================================================
-let menuData = fallbackMenu;
-
 async function loadFromSupabase() {
   try {
     const { data, error } = await supabase
@@ -133,33 +389,31 @@ async function loadFromSupabase() {
     if (error) throw error;
     if (data?.data?.categories?.length) {
       menuData = data.data;
-      console.log('✅ Menú cargado desde Supabase');
-    } else {
-      console.log('ℹ️ Usando menú de respaldo.');
+      console.log('✅ Menú cargado');
     }
     if (data?.data?.site) {
       applySiteConfig(data.data.site);
     }
   } catch (err) {
-    console.warn('⚠️ Error Supabase, usando respaldo:', err.message);
+    console.warn('⚠️ Error Supabase:', err.message);
+    menuData = fallbackMenu;
   }
   renderMenu();
+  actualizarUI();
 }
 
 // =====================================================
-// 🎨 RENDERIZAR MENÚ COMPLETO
+// 🎨 RENDERIZAR MENÚ
 // =====================================================
 function renderMenu() {
   categoriesNav.innerHTML = '';
   menuContainer.innerHTML = '';
 
-  // ---- BOTONES DE CATEGORÍA ----
+  // Botones de categoría
   menuData.categories.forEach((cat, index) => {
     let tieneDisponibles = false;
-    if (cat.subgrupos && cat.subgrupos.length > 0) {
-      tieneDisponibles = cat.subgrupos.some(sub =>
-        (sub.items || []).some(estaDisponible)
-      );
+    if (cat.subgrupos?.length > 0) {
+      tieneDisponibles = cat.subgrupos.some(sub => (sub.items || []).some(estaDisponible));
     } else {
       tieneDisponibles = (cat.items || []).some(estaDisponible);
     }
@@ -179,13 +433,11 @@ function renderMenu() {
   const primerBtn = categoriesNav.querySelector('.category-btn');
   if (primerBtn) primerBtn.classList.add('active');
 
-  // ---- SECCIONES ----
+  // Secciones
   menuData.categories.forEach((cat, index) => {
     let tieneDisponibles = false;
-    if (cat.subgrupos && cat.subgrupos.length > 0) {
-      tieneDisponibles = cat.subgrupos.some(sub =>
-        (sub.items || []).some(estaDisponible)
-      );
+    if (cat.subgrupos?.length > 0) {
+      tieneDisponibles = cat.subgrupos.some(sub => (sub.items || []).some(estaDisponible));
     } else {
       tieneDisponibles = (cat.items || []).some(estaDisponible);
     }
@@ -200,7 +452,7 @@ function renderMenu() {
     title.innerHTML = renderIconHTML(cat, '1.2em') + escapeHTML(cat.categoria || '');
     section.appendChild(title);
 
-    if (cat.subgrupos && cat.subgrupos.length > 0) {
+    if (cat.subgrupos?.length > 0) {
       cat.subgrupos.forEach(sub => {
         const visibles = (sub.items || []).filter(estaDisponible);
         if (visibles.length === 0) return;
@@ -228,21 +480,12 @@ function renderMenu() {
   });
 
   if (menuContainer.children.length === 0) {
-    menuContainer.innerHTML = `
-      <div style="text-align:center;padding:60px 20px;color:#999;">
-        <p style="font-family:Cormorant Garamond,serif;font-size:1.3rem;font-style:italic;">
-          La carta se está actualizando.
-        </p>
-        <p style="font-family:Poppins,sans-serif;font-size:0.85rem;margin-top:10px;">
-          Por favor, consulte con su mesero.
-        </p>
-      </div>
-    `;
+    menuContainer.innerHTML = `<div style="text-align:center;padding:60px 20px;color:#999;"><p style="font-family:Cormorant Garamond,serif;font-size:1.3rem;font-style:italic;">La carta se está actualizando.</p></div>`;
   }
 }
 
 // =====================================================
-// 🍽️ RENDERIZAR LISTA DE PLATOS
+// 🍽️ RENDERIZAR PLATOS
 // =====================================================
 function renderItems(items) {
   const grid = document.createElement('div');
@@ -251,12 +494,7 @@ function renderItems(items) {
   const visibles = (items || []).filter(estaDisponible);
 
   if (visibles.length === 0) {
-    grid.innerHTML = `
-      <p style="color:#999;font-style:italic;padding:14px;text-align:center;
-                font-family:Cormorant Garamond,serif;font-size:1.05rem;">
-        No hay platos disponibles por ahora.
-      </p>
-    `;
+    grid.innerHTML = `<p style="color:#999;font-style:italic;padding:14px;text-align:center;">No hay platos disponibles.</p>`;
     return grid;
   }
 
@@ -265,14 +503,13 @@ function renderItems(items) {
     el.className = 'menu-item';
 
     const badgeHTML = item.badge
-      ? `<span class="badge ${item.tipo || ''}">
-           ${item.tipo === 'premium' ? '⭐' : item.tipo === 'veg' ? '🌱' : '•'}
-           ${escapeHTML(item.badge)}
-         </span>`
+      ? `<span class="badge ${item.tipo || ''}">${item.tipo === 'premium' ? '⭐' : item.tipo === 'veg' ? '🌱' : '•'} ${escapeHTML(item.badge)}</span>`
       : '';
 
-    const descHTML = item.descripcion
-      ? `<p class="item-desc">${escapeHTML(item.descripcion)}</p>`
+    const descHTML = item.descripcion ? `<p class="item-desc">${escapeHTML(item.descripcion)}</p>` : '';
+
+    const addBtnHTML = mesaActual
+      ? `<button class="btn-add-item" data-nombre="${escapeHTML(item.nombre)}" data-precio="${item.precio}">+ Añadir</button>`
       : '';
 
     el.innerHTML = `
@@ -283,16 +520,26 @@ function renderItems(items) {
         </div>
         ${descHTML}
         ${badgeHTML}
+        ${addBtnHTML}
       </div>
     `;
     grid.appendChild(el);
+  });
+
+  grid.querySelectorAll('.btn-add-item').forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const nombre = btn.dataset.nombre;
+      const precio = parseFloat(btn.dataset.precio) || 0;
+      agregarAlCarrito(nombre, precio);
+    };
   });
 
   return grid;
 }
 
 // =====================================================
-// 📸 GALERÍA EXPANDIBLE — Foto + variantes
+// 📸 GALERÍA
 // =====================================================
 function renderGallery(imagenUrl, items) {
   const visibles = (items || []).filter(estaDisponible);
@@ -321,8 +568,10 @@ function renderGallery(imagenUrl, items) {
     const card = document.createElement('div');
     card.className = 'variant-card';
 
-    const descHTML = item.descripcion
-      ? `<p class="variant-desc">${escapeHTML(item.descripcion)}</p>`
+    const descHTML = item.descripcion ? `<p class="variant-desc">${escapeHTML(item.descripcion)}</p>` : '';
+
+    const addBtnHTML = mesaActual
+      ? `<button class="btn-add-item" data-nombre="${escapeHTML(item.nombre)}" data-precio="${item.precio}">+ Añadir</button>`
       : '';
 
     card.innerHTML = `
@@ -331,19 +580,56 @@ function renderGallery(imagenUrl, items) {
         <span class="variant-price">${formatPrice(item.precio)}</span>
       </div>
       ${descHTML}
+      ${addBtnHTML}
     `;
     variants.appendChild(card);
   });
 
-  photo.onclick = () => {
-    wrapper.classList.toggle('expanded');
-  };
+  variants.querySelectorAll('.btn-add-item').forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const nombre = btn.dataset.nombre;
+      const precio = parseFloat(btn.dataset.precio) || 0;
+      agregarAlCarrito(nombre, precio);
+    };
+  });
+
+  photo.onclick = () => wrapper.classList.toggle('expanded');
 
   wrapper.append(photo, variants);
   return wrapper;
 }
 
 // =====================================================
+// 🛒 ABRIR / CERRAR CARRITO
+// =====================================================
+function abrirCarrito() {
+  cartOverlay.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function cerrarCarrito() {
+  cartOverlay.classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+// =====================================================
 // 🚀 INICIAR
 // =====================================================
-loadFromSupabase();
+function iniciar() {
+  detectarMesa();
+  cargarCarrito();
+  actualizarUI();
+
+  cartBtn.onclick = abrirCarrito;
+  cartClose.onclick = cerrarCarrito;
+  cartEnviar.onclick = enviarPedido;
+
+  cartOverlay.onclick = (e) => {
+    if (e.target === cartOverlay) cerrarCarrito();
+  };
+
+  loadFromSupabase();
+}
+
+iniciar();

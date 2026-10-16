@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
   <title>Villa Paraíso Guardalavaca · Carta</title>
   <meta name="description" content="Carta digital del restaurante Villa Paraíso Guardalavaca" />
   <link rel="icon" type="image/png" href="img/logo.png" />
@@ -14,11 +14,18 @@
 </head>
 <body>
 
+  <!-- 🍽️ BANNER DE MESA (solo si ?mesa=X) -->
+  <div id="mesaBanner" class="mesa-banner hidden">
+    <span class="mesa-icon">🍽️</span>
+    <span class="mesa-texto">Mesa <strong id="mesaNumero">—</strong></span>
+    <span class="mesa-sep">·</span>
+    <span class="mesa-rest">Villa Paraíso</span>
+  </div>
+
   <div class="top-ornament"></div>
 
   <header class="hero">
     <div class="hero-content">
-
       <div class="logo-wrapper">
         <img src="img/logo.png" alt="Logo Villa Paraíso Guardalavaca" class="logo" id="heroLogo" />
       </div>
@@ -34,7 +41,8 @@
       <p class="tagline" id="heroTagline">Cocina del mar &amp; parrilla</p>
 
       <div class="info-badges">
-        <span id="heroHoras">🕐 10:00 am - 12:00 pm</span>
+        <span id="heroHoras">🕐 12:00 - 23:00</span>
+        <span id="heroWifi">📶 WiFi: VillaParaiso</span>
       </div>
     </div>
   </header>
@@ -45,10 +53,57 @@
 
   <footer class="footer">
     <div class="footer-ornament">✦ ✦ ✦</div>
-    <p class="footer-message" id="footerMensaje">Gracias por elegir <strong>Villa Paraíso</strong></p>
+    <p class="footer-message" id="footerMensaje">Gracias por preferirnos</p>
     <p class="small" id="footerSub">Será un placer atenderle</p>
-    <p class="small" id="footerCopy">© 2026 Villa Paraíso Guardalavaca</p>
+    <p class="small" id="footerCopy">© 2025 Villa Paraíso Guardalavaca</p>
   </footer>
+
+  <!-- 🛒 BOTÓN FLOTANTE DEL CARRITO (oculto si no hay mesa) -->
+  <button id="cartBtn" class="cart-btn hidden" aria-label="Ver pedido">
+    <span class="cart-icon">🛒</span>
+    <span id="cartCount" class="cart-count">0</span>
+  </button>
+
+  <!-- 📋 PANEL DEL CARRITO -->
+  <div id="cartOverlay" class="cart-overlay hidden">
+    <div id="cartPanel" class="cart-panel">
+
+      <div class="cart-header">
+        <h2>🛒 Tu pedido</h2>
+        <button id="cartClose" class="cart-close" aria-label="Cerrar">✕</button>
+      </div>
+
+      <div id="cartItems" class="cart-items">
+        <!-- Se llena desde JS -->
+      </div>
+
+      <div class="cart-footer">
+        <div class="cart-field">
+          <label for="cartNotas">Notas para el mesero (opcional)</label>
+          <textarea id="cartNotas" placeholder="Ej: sin cebolla, poco hielo..." rows="2"></textarea>
+        </div>
+
+        <div class="cart-total">
+          <span>Total:</span>
+          <strong id="cartTotal">$0.00</strong>
+        </div>
+
+        <button id="cartEnviar" class="cart-enviar">
+          🍽️ Enviar pedido al mesero
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ✅ TOAST DE CONFIRMACIÓN -->
+  <div id="toast" class="toast hidden">
+    <span class="toast-icon">✅</span>
+    <div class="toast-content">
+      <strong id="toastTitle">Pedido enviado</strong>
+      <p id="toastMsg">Tu mesero lo recibirá en un momento</p>
+    </div>
+  </div>
 
   <script type="module" src="script.js"></script>
 </body>
