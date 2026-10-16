@@ -1,9 +1,9 @@
 // =====================================================
 // 🔔 SERVICE WORKER — VILLA PARAÍSO GUARDALAVACA
-// Recibe notificaciones push y las muestra al mesero
+// Estrategia: network-first para HTML/CSS/JS, cache-first para imágenes
 // =====================================================
 
-const CACHE_NAME = 'villa-paraiso-v3';
+const CACHE_NAME = 'villa-paraiso-v3'; // ⬆️ Bump de versión al actualizar
 const URLS_TO_CACHE = [
   '/',
   '/index.html',
@@ -18,7 +18,6 @@ self.addEventListener('install', (event) => {
   console.log('🔧 Service Worker instalado');
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      // addAll falla si algún recurso no existe, por eso usamos try por cada uno
       return Promise.all(
         URLS_TO_CACHE.map(url =>
           cache.add(url).catch(() => {
@@ -42,6 +41,13 @@ self.addEventListener('activate', (event) => {
     )
   );
   self.clients.claim();
+});
+
+// ============ MENSAJE DEL CLIENTE ============
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 // ============ RECIBIR NOTIFICACIÓN PUSH ============
@@ -95,13 +101,11 @@ self.addEventListener('notificationclick', (event) => {
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // Si ya hay una ventana del mesero abierta, la enfocamos
       for (const client of clientList) {
         if (client.url.includes('/mesero') && 'focus' in client) {
           return client.focus();
         }
       }
-      // Si no hay ventana abierta, abrimos una nueva
       if (clients.openWindow) {
         return clients.openWindow(urlToOpen);
       }
@@ -109,35 +113,44 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-// ============ AL HACER CLIC EN UNA NOTIFICACIÓN CERRADA ============
-self.addEventListener('notificationclose', (event) => {
-  console.log('🔕 Notificación cerrada sin acción');
-});
-
-// ============ FETCH (opcional: cache-first para assets) ============
+// ============ FETCH — network-first para HTML/JS/CSS ============
 self.addEventListener('fetch', (event) => {
-  // Solo interceptamos peticiones GET
+  // Solo GET
   if (event.request.method !== 'GET') return;
 
-  // No interceptamos las peticiones a Supabase (necesitan siempre red)
-  if (event.request.url.includes('supabase.co')) return;
+  // No interceptar Supabase ni otras APIs externas
+  if (!event.request.url.startsWith(self.location.origin)) return;
 
-  // Estrategia: network-first con fallback a cache
+  const url = new URL(event.request.url);
+
+  // Archivos críticos: SIEMPRE red primero (sin caché)
+  const esArchivoCritico =
+    url.pathname.endsWith('.html') ||
+    url.pathname.endsWith('.js') ||
+    url.pathname.endsWith('.css') ||
+    url.pathname.endsWith('.json') ||
+    url.pathname === '/' ||
+    url.pathname === '/admin' ||
+    url.pathname === '/mesero';
+
+  if (esArchivoCritico) {
+    event.respondWith(
+      fetch(event.request, { cache: 'no-store' })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Imágenes y otros assets: cache-first (más rápido)
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // Guardamos una copia en cache si es un recurso propio
-        if (response.status === 200 && event.request.url.startsWith(self.location.origin)) {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone);
-          });
+    caches.match(event.request).then((cached) => {
+      return cached || fetch(event.request).then((response) => {
+        if (response.status === 200 && response.type === 'basic') {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         }
         return response;
-      })
-      .catch(() => {
-        // Si no hay red, buscamos en cache
-        return caches.match(event.request);
-      })
+      });
+    })
   );
 });

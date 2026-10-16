@@ -1,19 +1,34 @@
 // =====================================================
 // 🧑‍🍳 PANEL DEL MESERO - VILLA PARAÍSO GUARDALAVACA
+// Con protección anti-bucle y manejo correcto de sesión
 // =====================================================
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './supabase-config.js';
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// 🔧 Cliente con lock deshabilitado (evita errores en móvil)
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    lock: async (name, acquireTimeout, fn) => await fn(),
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false
+  }
+});
 
 // ========== ESTADO ==========
 let pedidosActuales = [];
-let filtroActual = 'activos'; // activos | hoy | historial
+let filtroActual = 'activos';
 let realtimeChannel = null;
+let realtimeActivo = false;
 let timerActualizar = null;
+let sesionActiva = false;
 
-// ========== ELEMENTOS ==========
+// 🔔 Estado de notificaciones (evita re-registro)
+let registrandoNotif = false;
+let yaRegistrado = false;
+
+// ========== ELEMENTOS DEL DOM ==========
 const loginScreen = document.getElementById('loginScreen');
 const meseroScreen = document.getElementById('meseroScreen');
 const loginForm = document.getElementById('loginForm');
@@ -36,7 +51,7 @@ const toastMsg = document.getElementById('toastMsg');
 const VAPID_PUBLIC_KEY = 'BKNDtfCwKpFcDzI9IuLKWk4gfTVMlkB-kX9fJKc7oAbO7AT10VbS3WZhhGjhKKXgzgylUQzE8h3tGy_uEm_sw58';
 
 // =====================================================
-// 🔐 AUTENTICACIÓN
+// 🔐 AUTENTICACIÓN (con protección anti-bucle)
 // =====================================================
 loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -62,39 +77,56 @@ supabase.auth.getSession().then(({ data: { session } }) => {
 });
 
 supabase.auth.onAuthStateChange((event, session) => {
-  if (session) activarSesion(session);
-  else mostrarLogin();
+  console.log('Auth event:', event);
+
+  // ✅ Solo reaccionar a login/logout reales
+  if (event === 'SIGNED_IN' && session) {
+    if (!sesionActiva) activarSesion(session);
+  } else if (event === 'SIGNED_OUT') {
+    sesionActiva = false;
+    mostrarLogin();
+  }
+  // Ignorar TOKEN_REFRESHED, USER_UPDATED, INITIAL_SESSION, etc.
 });
 
 function mostrarLogin() {
+  sesionActiva = false;
   loginScreen.classList.remove('hidden');
   meseroScreen.classList.add('hidden');
+
   if (realtimeChannel) {
     supabase.removeChannel(realtimeChannel);
     realtimeChannel = null;
+    realtimeActivo = false;
   }
 }
 
 async function activarSesion(session) {
+  // 🛡️ Si ya estaba activa, ignorar
+  if (sesionActiva) {
+    console.log('ℹ️ Sesión ya activa, ignorando duplicado');
+    return;
+  }
+  sesionActiva = true;
+
   loginScreen.classList.add('hidden');
   meseroScreen.classList.remove('hidden');
   userEmail.textContent = session.user.email;
 
-  // Cargar pedidos
   await cargarPedidos();
-
-  // Realtime
   suscribirRealtime();
 
-  // Actualizar cada 60 segundos para refrescar "hace X min"
+  // Actualizar "hace X min" cada 60 segundos
   if (timerActualizar) clearInterval(timerActualizar);
   timerActualizar = setInterval(() => {
     renderPedidos();
     actualizarStats();
   }, 60000);
 
-  // Registrar notificaciones
-  setTimeout(() => verificarNotificaciones(), 1000);
+  // Verificar notificaciones (solo si no está ya registrado)
+  setTimeout(() => {
+    if (!yaRegistrado) verificarNotificaciones();
+  }, 1000);
 }
 
 // =====================================================
@@ -120,14 +152,11 @@ async function verificarNotificaciones() {
   const permission = Notification.permission;
 
   if (permission === 'granted') {
-    // Ya tiene permiso, verificar suscripción
     await registrarNotificaciones();
     notifBar.classList.add('hidden');
   } else if (permission === 'default') {
-    // Mostrar barra para pedir permiso
     notifBar.classList.remove('hidden');
   } else {
-    // Denegado
     notifBar.classList.add('hidden');
   }
 }
@@ -138,6 +167,13 @@ activarNotifBtn.onclick = async () => {
 };
 
 async function registrarNotificaciones() {
+  // 🛡️ Evitar llamadas repetidas
+  if (registrandoNotif || yaRegistrado) {
+    console.log('ℹ️ Notificaciones ya registradas o en proceso');
+    return;
+  }
+  registrandoNotif = true;
+
   try {
     const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
     await navigator.serviceWorker.ready;
@@ -149,6 +185,7 @@ async function registrarNotificaciones() {
 
     if (permission !== 'granted') {
       console.warn('⚠️ Permiso denegado');
+      registrandoNotif = false;
       return;
     }
 
@@ -177,10 +214,13 @@ async function registrarNotificaciones() {
     if (error) throw error;
 
     console.log('✅ Notificaciones activas');
+    yaRegistrado = true;
     mostrarToast('🔔 Notificaciones activas', 'Recibirás los pedidos al instante', 'success');
 
   } catch (err) {
     console.error('❌ Error notificaciones:', err);
+  } finally {
+    registrandoNotif = false;
   }
 }
 
@@ -195,14 +235,12 @@ async function cargarPedidos() {
       .order('creado_en', { ascending: false });
 
     if (filtroActual === 'activos') {
-      // Solo pendientes, confirmados y en preparación
       query = query.in('estado', ['pendiente', 'confirmado', 'en_preparacion']);
     } else if (filtroActual === 'hoy') {
       const hoy = new Date();
       hoy.setHours(0, 0, 0, 0);
       query = query.gte('creado_en', hoy.toISOString());
     }
-    // 'historial' → sin filtro adicional
 
     const { data, error } = await query.limit(200);
 
@@ -239,7 +277,6 @@ function renderPedidos() {
     return;
   }
 
-  // Ordenar: pendientes primero, luego confirmados, etc. Por tiempo
   const orden = { pendiente: 1, confirmado: 2, en_preparacion: 3, entregado: 4, cancelado: 5 };
   const ordenados = [...pedidosActuales].sort((a, b) => {
     const diff = (orden[a.estado] || 9) - (orden[b.estado] || 9);
@@ -249,7 +286,6 @@ function renderPedidos() {
 
   pedidosContainer.innerHTML = ordenados.map(p => renderPedidoCard(p)).join('');
 
-  // Conectar botones
   pedidosContainer.querySelectorAll('[data-action]').forEach(btn => {
     btn.onclick = () => manejarAccion(btn.dataset.action, btn.dataset.id, btn);
   });
@@ -283,7 +319,6 @@ function renderPedidoCard(pedido) {
     cancelado: '⚫ Cancelado'
   };
 
-  // Botones según estado
   let botonesHTML = '';
   switch (pedido.estado) {
     case 'pendiente':
@@ -408,7 +443,6 @@ async function manejarAccion(accion, id, btn) {
 
     console.log(`✅ Pedido ${id} → ${nuevoEstado}`);
 
-    // Vibración sutil de confirmación
     if (navigator.vibrate) navigator.vibrate(50);
 
     const mensajes = {
@@ -421,11 +455,9 @@ async function manejarAccion(accion, id, btn) {
 
     mostrarToast(mensajes[accion], '', 'success');
 
-    // Actualizar localmente
     const pedido = pedidosActuales.find(p => p.id === id);
     if (pedido) pedido.estado = nuevoEstado;
 
-    // Si el filtro actual excluye el nuevo estado, removerlo
     if (filtroActual === 'activos' && ['entregado', 'cancelado'].includes(nuevoEstado)) {
       pedidosActuales = pedidosActuales.filter(p => p.id !== id);
     }
@@ -471,7 +503,6 @@ async function actualizarStats() {
     statVentas.textContent = `$${ventas.toFixed(0)}`;
     statTotal.textContent = pedidosHoy.length;
 
-    // Badge
     if (activos > 0) {
       badgeActivos.textContent = activos;
       badgeActivos.classList.remove('hidden');
@@ -485,11 +516,19 @@ async function actualizarStats() {
 }
 
 // =====================================================
-// 🔄 REALTIME
+// 🔄 REALTIME (con protección contra duplicados)
 // =====================================================
 function suscribirRealtime() {
+  // 🛡️ Si ya está activo, no hacer nada
+  if (realtimeActivo && realtimeChannel) {
+    console.log('ℹ️ Realtime ya activo');
+    return;
+  }
+
+  // Limpiar canal viejo si existe
   if (realtimeChannel) {
     supabase.removeChannel(realtimeChannel);
+    realtimeChannel = null;
   }
 
   realtimeChannel = supabase
@@ -501,12 +540,10 @@ function suscribirRealtime() {
         console.log('🔔 Cambio:', payload.eventType, payload);
 
         if (payload.eventType === 'INSERT') {
-          // Nuevo pedido
           if (!pedidosActuales.some(p => p.id === payload.new.id)) {
             pedidosActuales.unshift(payload.new);
           }
 
-          // Aplicar filtro
           if (filtroActual === 'activos' && ['pendiente', 'confirmado', 'en_preparacion'].includes(payload.new.estado)) {
             renderPedidos();
           } else if (filtroActual === 'hoy' || filtroActual === 'historial') {
@@ -515,7 +552,6 @@ function suscribirRealtime() {
 
           actualizarStats();
 
-          // Toast + vibración
           mostrarToast(
             '🍽️ Nuevo pedido',
             `Mesa ${payload.new.mesa} — $${Number(payload.new.total).toFixed(2)}`,
@@ -526,14 +562,12 @@ function suscribirRealtime() {
             navigator.vibrate([200, 100, 200]);
           }
 
-          // Sonido (opcional)
           reproducirSonido();
 
         } else if (payload.eventType === 'UPDATE') {
           const idx = pedidosActuales.findIndex(p => p.id === payload.new.id);
           if (idx > -1) pedidosActuales[idx] = payload.new;
 
-          // Si el pedido cambió de estado y ya no aplica al filtro, removerlo
           if (filtroActual === 'activos' && ['entregado', 'cancelado'].includes(payload.new.estado)) {
             pedidosActuales = pedidosActuales.filter(p => p.id !== payload.new.id);
           }
@@ -550,11 +584,14 @@ function suscribirRealtime() {
     )
     .subscribe((status) => {
       console.log('Realtime:', status);
+
       if (status === 'SUBSCRIBED') {
+        realtimeActivo = true;
         rtStatus.textContent = '🟢 En vivo';
         rtStatus.classList.remove('offline');
-      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-        rtStatus.textContent = '🔴 Sin conexión';
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        realtimeActivo = false;
+        rtStatus.textContent = '🟡 Reconectando...';
         rtStatus.classList.add('offline');
       }
     });
@@ -612,7 +649,7 @@ function escapeHTML(text) {
 }
 
 // =====================================================
-// 🎛️ FILTROS
+// 🎛️ FILTROS Y CONTROLES
 // =====================================================
 document.querySelectorAll('.filtro-btn').forEach(btn => {
   btn.onclick = () => {
