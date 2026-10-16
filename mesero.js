@@ -53,7 +53,7 @@ const toast = document.getElementById('toast');
 const toastTitle = document.getElementById('toastTitle');
 const toastMsg = document.getElementById('toastMsg');
 
-const VAPID_PUBLIC_KEY = 'BKNDtfCwKpFcDzI9IuLKWk4gfTVMlkB-kX9fJKc7oAbO7AT10VbS3WZhhGjhKKXgzgylUQzE8h3tGy_uEm_sw58';
+const VAPID_PUBLIC_KEY = 'BLLIxos7rCGcjiaikjTgzvPR-JfvaD43tj3hDDjZ-zKDMLhSsV1lea9s9bT3ipW1QYi5FhKF-_zaq_SPMBK11tI';
 
 // =====================================================
 // 🔐 AUTENTICACIÓN (con protección anti-bucle)
