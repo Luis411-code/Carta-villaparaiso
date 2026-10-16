@@ -1,15 +1,15 @@
 // =====================================================
 // 🧑‍🍳 PANEL DEL MESERO - VILLA PARAÍSO GUARDALAVACA
-// Arquitectura de 3 capas de notificación:
-//   1. WebSocket robusto (realtime + watchdog)
-//   2. Notificaciones push (respaldo)
-//   3. Auto-refresh (garantía)
+// Arquitectura garantizada para Cuba:
+//   1. WebSocket (cuando funciona, es instantáneo)
+//   2. Auto-refresh cada 8s (garantía absoluta)
+//   3. Alarma sonora + vibración al detectar pedido nuevo
 // =====================================================
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './supabase-config.js';
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
 
-// 🔧 Cliente con lock deshabilitado (evita errores en móvil)
+// 🔧 Cliente con lock deshabilitado
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     lock: async (name, acquireTimeout, fn) => await fn(),
@@ -21,6 +21,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 
 // ========== ESTADO ==========
 let pedidosActuales = [];
+let idsConocidos = new Set(); // Para detectar pedidos nuevos
 let filtroActual = 'activos';
 let realtimeChannel = null;
 let realtimeActivo = false;
@@ -29,9 +30,13 @@ let timerWatchdog = null;
 let timerAutoRefresh = null;
 let sesionActiva = false;
 
-// 🔔 Estado de notificaciones (evita re-registro)
+// 🔔 Notificaciones push
 let registrandoNotif = false;
 let yaRegistrado = false;
+
+// 🚨 Alarma
+let alarmaActiva = false;
+let intervaloAlarma = null;
 
 // ========== ELEMENTOS DEL DOM ==========
 const loginScreen = document.getElementById('loginScreen');
@@ -56,7 +61,7 @@ const toastMsg = document.getElementById('toastMsg');
 const VAPID_PUBLIC_KEY = 'BBEN4za2_pHp5jUM1ZDBXV6fBZe7T-74QBUxNWg9VwNJ55h048_m-dnIl5bOi-6VZkO36U68kHW8SLZlWbYsjRs';
 
 // =====================================================
-// 🔐 AUTENTICACIÓN (con protección anti-bucle)
+// 🔐 AUTENTICACIÓN
 // =====================================================
 loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -72,6 +77,7 @@ loginForm.addEventListener('submit', async (e) => {
 
 logoutBtn.addEventListener('click', async () => {
   if (confirm('¿Cerrar sesión?')) {
+    detenerAlarma();
     await supabase.auth.signOut();
   }
 });
@@ -90,11 +96,11 @@ supabase.auth.onAuthStateChange((event, session) => {
     sesionActiva = false;
     mostrarLogin();
   }
-  // Ignorar TOKEN_REFRESHED, USER_UPDATED, INITIAL_SESSION, etc.
 });
 
 function mostrarLogin() {
   sesionActiva = false;
+  detenerAlarma();
   loginScreen.classList.remove('hidden');
   meseroScreen.classList.add('hidden');
 
@@ -104,10 +110,11 @@ function mostrarLogin() {
     realtimeActivo = false;
   }
 
-  // Detener timers
   if (timerActualizar) { clearInterval(timerActualizar); timerActualizar = null; }
   if (timerWatchdog) { clearInterval(timerWatchdog); timerWatchdog = null; }
   if (timerAutoRefresh) { clearInterval(timerAutoRefresh); timerAutoRefresh = null; }
+
+  document.title = 'Mesero · Villa Paraíso';
 }
 
 async function activarSesion(session) {
@@ -121,63 +128,57 @@ async function activarSesion(session) {
   meseroScreen.classList.remove('hidden');
   userEmail.textContent = session.user.email;
 
-  await cargarPedidos();
+  // Primera carga — guardamos los IDs actuales para no sonar al inicio
+  await cargarPedidos(false);
+
   suscribirRealtime();
 
-  // =================================================
-  // 🕐 TIMER 1: Actualizar "hace X min" cada 60 seg
-  // =================================================
+  // Timer 1: Actualizar "hace X min" cada 60 seg
   if (timerActualizar) clearInterval(timerActualizar);
   timerActualizar = setInterval(() => {
     renderPedidos();
     actualizarStats();
   }, 60000);
 
-  // =================================================
-  // 🛡️ TIMER 2: Watchdog — Reconectar WebSocket si se cayó
-  // =================================================
+  // Timer 2: Watchdog WebSocket cada 20 seg
   if (timerWatchdog) clearInterval(timerWatchdog);
   timerWatchdog = setInterval(() => {
     if (sesionActiva && !realtimeActivo) {
-      console.log('🔄 Watchdog: canal inactivo, reconectando...');
+      console.log('🔄 Watchdog: reconectando WebSocket...');
       suscribirRealtime();
     }
-  }, 20000); // cada 20 segundos
+  }, 20000);
 
-  // =================================================
-  // 🔄 TIMER 3: Auto-refresh — Garantía absoluta
-  // =================================================
+  // Timer 3: AUTO-REFRESH CADA 8 SEGUNDOS (garantía absoluta)
   if (timerAutoRefresh) clearInterval(timerAutoRefresh);
   timerAutoRefresh = setInterval(() => {
-    if (document.visibilityState === 'visible' && sesionActiva) {
-      console.log('🔄 Auto-refresh periódico...');
-      cargarPedidos();
-      actualizarStats();
+    if (sesionActiva) {
+      cargarPedidos(true); // 👈 true = detectar nuevos y sonar alarma
     }
-  }, 15000); // cada 15 segundos
+  }, 8000);
 
-  // Verificar notificaciones
+  // Verificar notificaciones push (respaldo)
   setTimeout(() => {
     if (!yaRegistrado) verificarNotificaciones();
   }, 1000);
 }
 
 // =====================================================
-// 👁️ VISIBILITY CHANGE — Reconectar al volver a la pestaña
+// 👁️ VISIBILITY CHANGE
 // =====================================================
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && sesionActiva) {
-    console.log('👁️ Pestaña visible, verificando conexión...');
-    if (!realtimeActivo) {
-      suscribirRealtime();
-    }
-    cargarPedidos();
-    actualizarStats();
+    console.log('👁️ Pestaña visible');
+    // Al volver, limpiamos el título
+    document.title = 'Mesero · Villa Paraíso';
+    // Recargamos sin alarma (para no asustar)
+    cargarPedidos(false);
+    if (!realtimeActivo) suscribirRealtime();
   }
 });
 
 // =====================================================
-// 🔔 NOTIFICACIONES PUSH
+// 🔔 NOTIFICACIONES PUSH (respaldo)
 // =====================================================
 function urlBase64ToUint8Array(base64String) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -191,11 +192,7 @@ function urlBase64ToUint8Array(base64String) {
 }
 
 async function verificarNotificaciones() {
-  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-    console.warn('⚠️ Navegador sin soporte para notificaciones');
-    return;
-  }
-
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
   const permission = Notification.permission;
 
   if (permission === 'granted') {
@@ -214,10 +211,7 @@ activarNotifBtn.onclick = async () => {
 };
 
 async function registrarNotificaciones() {
-  if (registrandoNotif || yaRegistrado) {
-    console.log('ℹ️ Notificaciones ya registradas o en proceso');
-    return;
-  }
+  if (registrandoNotif || yaRegistrado) return;
   registrandoNotif = true;
 
   try {
@@ -229,14 +223,9 @@ async function registrarNotificaciones() {
       permission = await Notification.requestPermission();
     }
 
-    if (permission !== 'granted') {
-      console.warn('⚠️ Permiso denegado');
-      registrandoNotif = false;
-      return;
-    }
+    if (permission !== 'granted') { registrandoNotif = false; return; }
 
     let subscription = await registration.pushManager.getSubscription();
-
     if (!subscription) {
       subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
@@ -245,7 +234,6 @@ async function registrarNotificaciones() {
     }
 
     const subJson = subscription.toJSON();
-
     const { error } = await supabase
       .from('push_subscriptions')
       .upsert(
@@ -258,11 +246,8 @@ async function registrarNotificaciones() {
       );
 
     if (error) throw error;
-
-    console.log('✅ Notificaciones activas');
+    console.log('✅ Notificaciones push activas');
     yaRegistrado = true;
-    mostrarToast('🔔 Notificaciones activas', 'Recibirás los pedidos al instante', 'success');
-
   } catch (err) {
     console.error('❌ Error notificaciones:', err);
   } finally {
@@ -272,8 +257,9 @@ async function registrarNotificaciones() {
 
 // =====================================================
 // 📥 CARGAR PEDIDOS
+// detectarNuevos = true → activa alarma si hay pedidos nuevos
 // =====================================================
-async function cargarPedidos() {
+async function cargarPedidos(detectarNuevos = true) {
   try {
     let query = supabase
       .from('pedidos')
@@ -289,15 +275,131 @@ async function cargarPedidos() {
     }
 
     const { data, error } = await query.limit(200);
-
     if (error) throw error;
 
-    pedidosActuales = data || [];
+    const pedidos = data || [];
+
+    // 🔍 Detectar pedidos NUEVOS (no conocidos antes)
+    if (detectarNuevos) {
+      const nuevos = pedidos.filter(p =>
+        !idsConocidos.has(p.id) && p.estado === 'pendiente'
+      );
+
+      if (nuevos.length > 0) {
+        console.log(`🚨 ${nuevos.length} pedido(s) nuevo(s) detectado(s)`);
+        activarAlarma();
+        mostrarToast(
+          `🍽️ ${nuevos.length} pedido${nuevos.length > 1 ? 's' : ''} nuevo${nuevos.length > 1 ? 's' : ''}`,
+          nuevos.map(p => `Mesa ${p.mesa}`).join(' · '),
+          'success'
+        );
+      }
+    }
+
+    // Actualizar IDs conocidos
+    idsConocidos = new Set(pedidos.map(p => p.id));
+
+    pedidosActuales = pedidos;
     renderPedidos();
     actualizarStats();
 
+    // Actualizar título con contador de pendientes
+    const pendientes = pedidos.filter(p => p.estado === 'pendiente').length;
+    if (pendientes > 0 && document.visibilityState !== 'visible') {
+      document.title = `(${pendientes}) 🔴 Nuevos pedidos`;
+    } else if (pendientes === 0) {
+      document.title = 'Mesero · Villa Paraíso';
+    }
+
   } catch (err) {
     console.error('Error al cargar pedidos:', err);
+  }
+}
+
+// =====================================================
+// 🚨 ALARMA SONORA + VIBRACIÓN
+// =====================================================
+function activarAlarma() {
+  if (alarmaActiva) {
+    console.log('🔔 Alarma ya activa');
+    return;
+  }
+  alarmaActiva = true;
+
+  // 🎵 Sonar alarma inmediata
+  reproducirAlarma();
+
+  // 🔁 Repetir cada 3 segundos hasta que el mesero interactúe
+  intervaloAlarma = setInterval(() => {
+    if (alarmaActiva) reproducirAlarma();
+  }, 3000);
+
+  // Auto-detener después de 30 segundos
+  setTimeout(() => {
+    if (alarmaActiva) {
+      console.log('⏱️ Auto-deteniendo alarma (30s)');
+      detenerAlarma();
+    }
+  }, 30000);
+
+  // Detener al tocar la pantalla
+  const detenerConToque = () => {
+    detenerAlarma();
+    document.removeEventListener('click', detenerConToque);
+    document.removeEventListener('touchstart', detenerConToque);
+  };
+  document.addEventListener('click', detenerConToque, { once: true });
+  document.addEventListener('touchstart', detenerConToque, { once: true });
+}
+
+function detenerAlarma() {
+  if (intervaloAlarma) {
+    clearInterval(intervaloAlarma);
+    intervaloAlarma = null;
+  }
+  alarmaActiva = false;
+  console.log('🔕 Alarma detenida');
+}
+
+function reproducirAlarma() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+    // Patrón de alarma: 3 tonos agudos rápidos + pausa
+    const tonos = [
+      { freq: 1200, start: 0,    dur: 0.15 },
+      { freq: 1500, start: 0.2,  dur: 0.15 },
+      { freq: 1800, start: 0.4,  dur: 0.25 }
+    ];
+
+    tonos.forEach(t => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.type = 'square';
+      osc.frequency.value = t.freq;
+
+      gain.gain.setValueAtTime(0.5, ctx.currentTime + t.start);
+      gain.gain.exponentialRampToValueAtTime(
+        0.001,
+        ctx.currentTime + t.start + t.dur
+      );
+
+      osc.start(ctx.currentTime + t.start);
+      osc.stop(ctx.currentTime + t.start + t.dur);
+    });
+
+    // 📳 Vibración potente (3 pulsos)
+    if (navigator.vibrate) {
+      navigator.vibrate([300, 100, 300, 100, 300]);
+    }
+
+    console.log('🔔 ¡Alarma sonando!');
+  } catch (e) {
+    console.warn('Error alarma:', e);
   }
 }
 
@@ -456,6 +558,9 @@ function tiempoRelativo(fecha) {
 // 🎬 ACCIONES
 // =====================================================
 async function manejarAccion(accion, id, btn) {
+  // 🔕 Detener alarma al interactuar
+  detenerAlarma();
+
   const nuevosEstados = {
     confirmar: 'confirmado',
     rechazar: 'cancelado',
@@ -486,8 +591,6 @@ async function manejarAccion(accion, id, btn) {
 
     if (error) throw error;
 
-    console.log(`✅ Pedido ${id} → ${nuevoEstado}`);
-
     if (navigator.vibrate) navigator.vibrate(50);
 
     const mensajes = {
@@ -500,6 +603,7 @@ async function manejarAccion(accion, id, btn) {
 
     mostrarToast(mensajes[accion], '', 'success');
 
+    // Actualizar localmente sin esperar el auto-refresh
     const pedido = pedidosActuales.find(p => p.id === id);
     if (pedido) pedido.estado = nuevoEstado;
 
@@ -554,23 +658,17 @@ async function actualizarStats() {
     } else {
       badgeActivos.classList.add('hidden');
     }
-
   } catch (err) {
     console.error('Error stats:', err);
   }
 }
 
 // =====================================================
-// 🔄 REALTIME (con protección contra duplicados)
+// 🔄 REALTIME (WebSocket — puede funcionar o no)
 // =====================================================
 function suscribirRealtime() {
-  // 🛡️ Si ya está activo, no hacer nada
-  if (realtimeActivo && realtimeChannel) {
-    console.log('ℹ️ Realtime ya activo');
-    return;
-  }
+  if (realtimeActivo && realtimeChannel) return;
 
-  // Limpiar canal viejo si existe
   if (realtimeChannel) {
     supabase.removeChannel(realtimeChannel);
     realtimeChannel = null;
@@ -582,33 +680,27 @@ function suscribirRealtime() {
       'postgres_changes',
       { event: '*', schema: 'public', table: 'pedidos' },
       (payload) => {
-        console.log('🔔 Cambio:', payload.eventType, payload);
+        console.log('🔔 Realtime:', payload.eventType);
 
         if (payload.eventType === 'INSERT') {
-          if (!pedidosActuales.some(p => p.id === payload.new.id)) {
-            pedidosActuales.unshift(payload.new);
-          }
-
-          if (filtroActual === 'activos' && ['pendiente', 'confirmado', 'en_preparacion'].includes(payload.new.estado)) {
+          if (!idsConocidos.has(payload.new.id)) {
+            idsConocidos.add(payload.new.id);
+            if (!pedidosActuales.some(p => p.id === payload.new.id)) {
+              pedidosActuales.unshift(payload.new);
+            }
             renderPedidos();
-          } else if (filtroActual === 'hoy' || filtroActual === 'historial') {
-            renderPedidos();
+            actualizarStats();
+
+            // 🚨 Alarma inmediata por WebSocket
+            if (payload.new.estado === 'pendiente') {
+              activarAlarma();
+              mostrarToast(
+                '🍽️ Nuevo pedido',
+                `Mesa ${payload.new.mesa} — $${Number(payload.new.total).toFixed(2)}`,
+                'success'
+              );
+            }
           }
-
-          actualizarStats();
-
-          mostrarToast(
-            '🍽️ Nuevo pedido',
-            `Mesa ${payload.new.mesa} — $${Number(payload.new.total).toFixed(2)}`,
-            'success'
-          );
-
-          if (navigator.vibrate) {
-            navigator.vibrate([200, 100, 200]);
-          }
-
-          reproducirSonido();
-
         } else if (payload.eventType === 'UPDATE') {
           const idx = pedidosActuales.findIndex(p => p.id === payload.new.id);
           if (idx > -1) pedidosActuales[idx] = payload.new;
@@ -619,9 +711,9 @@ function suscribirRealtime() {
 
           renderPedidos();
           actualizarStats();
-
         } else if (payload.eventType === 'DELETE') {
           pedidosActuales = pedidosActuales.filter(p => p.id !== payload.old.id);
+          idsConocidos.delete(payload.old.id);
           renderPedidos();
           actualizarStats();
         }
@@ -634,34 +726,12 @@ function suscribirRealtime() {
         realtimeActivo = true;
         rtStatus.textContent = '🟢 En vivo';
         rtStatus.classList.remove('offline');
-      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+      } else {
         realtimeActivo = false;
         rtStatus.textContent = '🟡 Reconectando...';
         rtStatus.classList.add('offline');
       }
     });
-}
-
-// =====================================================
-// 🔊 SONIDO DE NUEVO PEDIDO
-// =====================================================
-function reproducirSonido() {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-
-    osc.frequency.value = 880;
-    osc.type = 'sine';
-    gain.gain.value = 0.3;
-
-    osc.start();
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
-    osc.stop(ctx.currentTime + 0.3);
-  } catch (e) { /* silencioso */ }
 }
 
 // =====================================================
@@ -694,20 +764,20 @@ function escapeHTML(text) {
 }
 
 // =====================================================
-// 🎛️ FILTROS Y CONTROLES
+// 🎛️ FILTROS
 // =====================================================
 document.querySelectorAll('.filtro-btn').forEach(btn => {
   btn.onclick = () => {
     document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     filtroActual = btn.dataset.filtro;
-    cargarPedidos();
+    cargarPedidos(false);
   };
 });
 
 refreshBtn.onclick = () => {
   refreshBtn.classList.add('spinning');
-  cargarPedidos().then(() => {
+  cargarPedidos(false).then(() => {
     setTimeout(() => refreshBtn.classList.remove('spinning'), 500);
   });
 };
