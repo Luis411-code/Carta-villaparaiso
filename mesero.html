@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Mesero · Villa Paraíso</title>
+  <link rel="icon" type="image/png" href="img/logo.png" />
+  <link rel="manifest" href="mesero-manifest.json" />
+  <meta name="theme-color" content="#0f2c2c" />
+  <link rel="stylesheet" href="mesero.css" />
+  <link href="https://fonts.bunny.net/css?family=cinzel:400,600,700|poppins:300,400,500,600,700" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- ============ LOGIN ============ -->
+  <div id="loginScreen" class="login-screen">
+    <div class="login-card">
+      <img src="img/logo.png" alt="Logo" class="login-logo" />
+      <h1>Panel del Mesero</h1>
+      <p class="login-sub">Villa Paraíso Guardalavaca</p>
+
+      <form id="loginForm">
+        <input type="email" id="email" placeholder="Correo electrónico" required />
+        <input type="password" id="password" placeholder="Contraseña" required />
+        <button type="submit" class="btn-primary">Iniciar sesión</button>
+      </form>
+      <p id="loginError" class="login-error"></p>
+    </div>
+  </div>
+
+  <!-- ============ PANEL ============ -->
+  <div id="meseroScreen" class="mesero-screen hidden">
+
+    <!-- Header -->
+    <header class="mesero-header">
+      <div class="header-left">
+        <img src="img/logo.png" alt="Logo" class="header-logo" />
+        <div>
+          <h1>Panel del Mesero</h1>
+          <p id="userEmail" class="user-email"></p>
+        </div>
+      </div>
+      <div class="header-right">
+        <div id="rtStatus" class="rt-status">🟢 En vivo</div>
+        <button id="logoutBtn" class="btn-logout" title="Cerrar sesión">🚪</button>
+      </div>
+    </header>
+
+    <!-- Barra de estado notificaciones -->
+    <div id="notifBar" class="notif-bar hidden">
+      <span class="notif-icon">🔔</span>
+      <span class="notif-text">Activa las notificaciones para no perderte ningún pedido</span>
+      <button id="activarNotifBtn" class="btn-notif">Activar</button>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="mesero-toolbar">
+      <button class="filtro-btn active" data-filtro="activos">
+        🔴 Activos
+        <span id="badgeActivos" class="filtro-badge hidden">0</span>
+      </button>
+      <button class="filtro-btn" data-filtro="hoy">📅 Hoy</button>
+      <button class="filtro-btn" data-filtro="historial">📁 Historial</button>
+
+      <button id="refreshBtn" class="btn-refresh" title="Refrescar">🔄</button>
+    </div>
+
+    <!-- Contenedor de pedidos -->
+    <main id="pedidosContainer" class="pedidos-container">
+      <!-- Se llena desde JS -->
+    </main>
+
+    <!-- Resumen rápido (footer) -->
+    <footer class="mesero-footer">
+      <div class="footer-stat">
+        <span class="stat-num" id="statActivos">0</span>
+        <span class="stat-label">Activos</span>
+      </div>
+      <div class="footer-stat">
+        <span class="stat-num" id="statVentas">$0</span>
+        <span class="stat-label">Ventas hoy</span>
+      </div>
+      <div class="footer-stat">
+        <span class="stat-num" id="statTotal">0</span>
+        <span class="stat-label">Pedidos hoy</span>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast hidden">
+    <span class="toast-icon">🔔</span>
+    <div class="toast-content">
+      <strong id="toastTitle">Nuevo pedido</strong>
+      <p id="toastMsg">Mesa 5</p>
+    </div>
+  </div>
+
+  <script type="module" src="mesero.js"></script>
+</body>
+</html>
