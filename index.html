@@ -42,7 +42,6 @@
 
       <div class="info-badges">
         <span id="heroHoras">🕐 12:00 - 23:00</span>
-        <span id="heroWifi">📶 WiFi: VillaParaiso</span>
       </div>
     </div>
   </header>
@@ -58,18 +57,18 @@
     <p class="small" id="footerCopy">© 2025 Villa Paraíso Guardalavaca</p>
   </footer>
 
-  <!-- 🛒 BOTÓN FLOTANTE DEL CARRITO (oculto si no hay mesa) -->
-  <button id="cartBtn" class="cart-btn hidden" aria-label="Ver pedido">
-    <span class="cart-icon">🛒</span>
+  <!-- 📋 BOTÓN FLOTANTE DE LA COMANDA -->
+  <button id="cartBtn" class="cart-btn hidden" aria-label="Ver comanda">
+    <span class="cart-icon">📋</span>
     <span id="cartCount" class="cart-count">0</span>
   </button>
 
-  <!-- 📋 PANEL DEL CARRITO -->
+  <!-- 📋 PANEL DE LA COMANDA -->
   <div id="cartOverlay" class="cart-overlay hidden">
     <div id="cartPanel" class="cart-panel">
 
       <div class="cart-header">
-        <h2>🛒 Tu pedido</h2>
+        <h2>📋 Tu comanda</h2>
         <button id="cartClose" class="cart-close" aria-label="Cerrar">✕</button>
       </div>
 
@@ -79,8 +78,8 @@
 
       <div class="cart-footer">
         <div class="cart-field">
-          <label for="cartNotas">Notas para el mesero (opcional)</label>
-          <textarea id="cartNotas" placeholder="Ej: sin cebolla, poco hielo..." rows="2"></textarea>
+          <label for="cartNotas">Notas para la cocina (opcional)</label>
+          <textarea id="cartNotas" placeholder="Ej: sin cebolla, término medio..." rows="2"></textarea>
         </div>
 
         <div class="cart-total">
@@ -89,7 +88,7 @@
         </div>
 
         <button id="cartEnviar" class="cart-enviar">
-          🍽️ Enviar pedido al mesero
+          ✅ Enviar comanda al mesero
         </button>
       </div>
 
@@ -100,8 +99,8 @@
   <div id="toast" class="toast hidden">
     <span class="toast-icon">✅</span>
     <div class="toast-content">
-      <strong id="toastTitle">Pedido enviado</strong>
-      <p id="toastMsg">Tu mesero lo recibirá en un momento</p>
+      <strong id="toastTitle">Comanda enviada</strong>
+      <p id="toastMsg">Tu mesero la recibirá en un momento</p>
     </div>
   </div>
 

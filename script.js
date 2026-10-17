@@ -1,5 +1,5 @@
 // =====================================================
-// 🍽️  MENÚ DIGITAL + CARRITO - VILLA PARAÍSO GUARDALAVACA
+// 🍽️  MENÚ DIGITAL + COMANDA - VILLA PARAÍSO GUARDALAVACA
 // =====================================================
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './supabase-config.js';
@@ -12,7 +12,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // =====================================================
 let menuData = { categories: [] };
 let mesaActual = null;
-let carrito = [];
+let carrito = []; // Internamente sigue siendo el array de items
 
 const CARRITO_KEY = 'villa-paraiso-carrito';
 const MESA_KEY = 'villa-paraiso-mesa';
@@ -90,7 +90,7 @@ function detectarMesa() {
 }
 
 // =====================================================
-// 🛒 CARRITO — Persistencia
+// 🛒 COMANDA — Persistencia
 // =====================================================
 function cargarCarrito() {
   try {
@@ -123,7 +123,7 @@ function contarItems() {
 }
 
 // =====================================================
-// 🛒 CARRITO — Operaciones
+// 🛒 COMANDA — Operaciones
 // =====================================================
 function agregarAlCarrito(nombre, precio) {
   const existente = carrito.find(i => i.nombre === nombre);
@@ -133,7 +133,7 @@ function agregarAlCarrito(nombre, precio) {
     carrito.push({ nombre, precio: Number(precio) || 0, cantidad: 1 });
   }
   guardarCarrito();
-  mostrarToast('✅ Añadido', `${nombre} agregado a tu pedido`, false);
+  mostrarToast('✅ Añadido', `${nombre} agregado a tu comanda`, false);
 }
 
 function cambiarCantidad(nombre, delta) {
@@ -152,7 +152,7 @@ function eliminarDelCarrito(nombre) {
 }
 
 // =====================================================
-// 🎨 CARRITO — Actualizar UI
+// 🎨 COMANDA — Actualizar UI
 // =====================================================
 function actualizarUI() {
   // Contador del botón
@@ -168,8 +168,8 @@ function actualizarUI() {
   if (carrito.length === 0) {
     cartItems.innerHTML = `
       <div class="cart-empty">
-        <span class="cart-empty-icon">🛒</span>
-        Tu pedido está vacío
+        <span class="cart-empty-icon">📋</span>
+        Tu comanda está vacía
       </div>
     `;
     cartEnviar.disabled = true;
@@ -211,7 +211,7 @@ function actualizarUI() {
     cartItems.querySelectorAll('.cart-item-eliminar').forEach(btn => {
       btn.onclick = () => {
         const nombre = btn.dataset.nombre;
-        if (confirm(`¿Eliminar "${nombre}" del pedido?`)) {
+        if (confirm(`¿Eliminar "${nombre}" de la comanda?`)) {
           eliminarDelCarrito(nombre);
         }
       };
@@ -229,7 +229,7 @@ function actualizarUI() {
     const enCarrito = carrito.some(i => i.nombre === nombre);
     if (enCarrito) {
       btn.classList.add('added');
-      btn.textContent = '✓ En el pedido';
+      btn.textContent = '✓ En la comanda';
     } else {
       btn.classList.remove('added');
       btn.textContent = '+ Añadir';
@@ -254,7 +254,7 @@ function mostrarToast(titulo, mensaje, esError = false) {
 }
 
 // =====================================================
-// 📤 ENVIAR PEDIDO A SUPABASE
+// 📤 ENVIAR COMANDA A SUPABASE
 // =====================================================
 async function enviarPedido() {
   if (!mesaActual) {
@@ -263,7 +263,7 @@ async function enviarPedido() {
   }
 
   if (carrito.length === 0) {
-    mostrarToast('⚠️ Pedido vacío', 'Añade algo antes de enviar', true);
+    mostrarToast('⚠️ Comanda vacía', 'Añade platos antes de enviar', true);
     return;
   }
 
@@ -275,6 +275,7 @@ async function enviarPedido() {
     const total = calcularTotal();
     const notas = cartNotas.value.trim();
 
+    // La tabla en Supabase sigue llamándose "pedidos", es el equivalente técnico
     const { data, error } = await supabase
       .from('pedidos')
       .insert({
@@ -289,24 +290,24 @@ async function enviarPedido() {
 
     if (error) throw error;
 
-    console.log('✅ Pedido enviado:', data);
+    console.log('✅ Comanda enviada:', data);
 
-    cartEnviar.textContent = '✅ ¡Enviado!';
-    mostrarToast('🎉 ¡Pedido enviado!', `Mesa ${mesaActual} · Tu mesero lo recibirá en un momento`, false);
+    cartEnviar.textContent = '✅ ¡Enviada!';
+    mostrarToast('🎉 ¡Comanda enviada!', `Mesa ${mesaActual} · Tu mesero la recibirá en un momento`, false);
 
     setTimeout(() => {
       limpiarCarrito();
       cerrarCarrito();
       cartEnviar.classList.remove('enviando');
-      cartEnviar.textContent = '🍽️ Enviar pedido al mesero';
+      cartEnviar.textContent = '✅ Enviar comanda al mesero';
       cartEnviar.disabled = false;
     }, 1200);
 
   } catch (err) {
-    console.error('❌ Error al enviar pedido:', err);
+    console.error('❌ Error al enviar comanda:', err);
     cartEnviar.disabled = false;
     cartEnviar.classList.remove('enviando');
-    cartEnviar.textContent = '🍽️ Enviar pedido al mesero';
+    cartEnviar.textContent = '✅ Enviar comanda al mesero';
     mostrarToast('❌ No se pudo enviar', 'Revisa tu conexión e inténtalo de nuevo', true);
   }
 }
@@ -341,7 +342,6 @@ function applySiteConfig(site) {
   setText('heroSubtitulo', site.subtitulo);
   setText('heroTagline', site.tagline);
   setText('heroHoras', site.horas);
-  setText('heroWifi', site.wifi);
   setText('footerSub', site.footerSub);
   setText('footerCopy', site.footerCopy);
 
@@ -409,7 +409,6 @@ function renderMenu() {
   categoriesNav.innerHTML = '';
   menuContainer.innerHTML = '';
 
-  // Botones de categoría
   menuData.categories.forEach((cat, index) => {
     let tieneDisponibles = false;
     if (cat.subgrupos?.length > 0) {
@@ -433,7 +432,6 @@ function renderMenu() {
   const primerBtn = categoriesNav.querySelector('.category-btn');
   if (primerBtn) primerBtn.classList.add('active');
 
-  // Secciones
   menuData.categories.forEach((cat, index) => {
     let tieneDisponibles = false;
     if (cat.subgrupos?.length > 0) {
@@ -601,7 +599,7 @@ function renderGallery(imagenUrl, items) {
 }
 
 // =====================================================
-// 🛒 ABRIR / CERRAR CARRITO
+// 🛒 ABRIR / CERRAR COMANDA
 // =====================================================
 function abrirCarrito() {
   cartOverlay.classList.remove('hidden');

@@ -148,7 +148,6 @@ const SITE_DEFAULTS = {
   subtitulo: 'Guardalavaca',
   tagline: 'Cocina del mar & parrilla',
   horas: '🕐 12:00 - 23:00',
-  wifi: '📶 WiFi: VillaParaiso',
   footerMensaje: 'Gracias por preferirnos',
   footerSub: 'Será un placer atenderle',
   footerCopy: '© 2025 Villa Paraíso Guardalavaca'
@@ -159,7 +158,6 @@ const SITE_FIELDS = {
   subtitulo: 'site-subtitulo',
   tagline: 'site-tagline',
   horas: 'site-horas',
-  wifi: 'site-wifi',
   footerMensaje: 'site-footerMensaje',
   footerSub: 'site-footerSub',
   footerCopy: 'site-footerCopy'
