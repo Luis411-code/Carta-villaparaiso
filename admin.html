@@ -8,9 +8,9 @@
   <link rel="stylesheet" href="admin.css" />
   <link href="https://fonts.bunny.net/css?family=cinzel:400,600,700|poppins:300,400,500,600" rel="stylesheet" />
   
-  <!-- Librerías para generar QRs y descargar ZIP (usando unpkg y defer) -->
-  <script defer src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
-  <script defer src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"></script>
+  <!-- Librerías para generar QRs (Usando cdnjs que es más estable) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
 
@@ -109,8 +109,13 @@
       <div class="admin-actions">
         <button id="addCategoryBtn" class="btn-add">+ Añadir categoría</button>
         <button id="reloadBtn" class="btn-secondary">🔄 Recargar</button>
-        <!-- Botón modificado para que el JS le asigne la URL segura -->
-        <button id="btnVerMenu" class="btn-secondary">👁️ Ver menú</button>
+        
+        <!-- NUEVO BOTÓN VER MENÚ CON SELECTOR DE MESA -->
+        <div style="display: flex; gap: 5px; align-items: center; background: #fff; border: 2px solid var(--border); border-radius: 10px; padding: 2px 5px;">
+          <span style="font-size: 0.8rem; color: var(--gray); padding-left: 5px;">Mesa:</span>
+          <input type="text" id="mesaPreviewInput" value="1" style="width: 50px; border: none; outline: none; text-align: center; font-weight: 600; font-family: inherit;" />
+          <button id="btnVerMenu" class="btn-secondary" style="border: none; background: var(--dark); color: white;">👁️ Ver menú</button>
+        </div>
       </div>
 
       <div id="categoriesContainer" class="categories-container"></div>
@@ -124,9 +129,7 @@
         <button id="toggleHistorial" class="btn-secondary">📁 Ver historial</button>
       </div>
 
-      <div id="pedidosContainer" class="pedidos-container">
-        <!-- Se llena desde JS -->
-      </div>
+      <div id="pedidosContainer" class="pedidos-container"></div>
     </main>
 
     <!-- ==================== TAB: GENERADOR DE QRs ==================== -->
@@ -134,7 +137,7 @@
       <section class="site-config">
         <h2 class="site-config-title">📱 Generador de Códigos QR</h2>
         <p class="site-config-help">
-          Escribe los nombres o números de tus mesas separados por comas. El sistema generará los QRs seguros con tu logo en el centro, listos para imprimir.
+          Escribe los nombres o números de tus mesas separados por comas. El sistema generará los QRs seguros.
         </p>
 
         <div class="site-field full" style="margin-bottom: 15px;">
@@ -148,9 +151,7 @@
         </div>
       </section>
 
-      <div id="qrContainer" class="qr-grid">
-        <!-- Aquí se mostrarán los QRs generados -->
-      </div>
+      <div id="qrContainer" class="qr-grid"></div>
     </main>
 
   </div>

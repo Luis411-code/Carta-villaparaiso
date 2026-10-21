@@ -45,6 +45,13 @@ window.addEventListener('beforeunload', (e) => {
   }
 });
 
+function escapeHTML(text) {
+  if (!text) return '';
+  const div = document.createElement('div'); 
+  div.textContent = text; 
+  return div.innerHTML;
+}
+
 // =====================================================
 // 🔐 AUTENTICACIÓN
 // =====================================================
@@ -755,15 +762,10 @@ if (toggleHistorial) toggleHistorial.onclick = () => {
   cargarPedidos();
 };
 
-function escapeHTML(text) {
-  if (!text) return '';
-  const div = document.createElement('div'); div.textContent = text; return div.innerHTML;
-}
-
 // =====================================================
 // 📱 GENERADOR DE QRs
 // =====================================================
-const SECRETO_QR = 'VillaParaiso-Secreto-Muy-Dificil-De-Adivinar-2025';
+const SECRETO_QR = 'VillaParaiso-Secreto-Muy-Dificil-De-Advinar-2025';
 const URL_BASE = 'https://villaparaiso.vercel.app';
 
 async function generarHashQR(mesa) {
@@ -775,10 +777,20 @@ async function generarHashQR(mesa) {
 }
 
 async function generarQRConLogo(mesa, token) {
+  // Verificamos si la librería QRCode se cargó correctamente
+  if (typeof QRCode === 'undefined') {
+    throw new Error('La librería generadora de QR no se ha cargado. Revisa tu conexión a internet o si el CDN está bloqueado en tu red.');
+  }
+
   const url = `${URL_BASE}/?mesa=${encodeURIComponent(mesa)}&t=${token}`;
   const canvas = document.createElement('canvas');
+  
+  // Generar el QR en el canvas
   await QRCode.toCanvas(canvas, url, {
-    width: 800, margin: 2, errorCorrectionLevel: 'H', color: { dark: '#000000', light: '#ffffff' }
+    width: 800,
+    margin: 2,
+    errorCorrectionLevel: 'H',
+    color: { dark: '#000000', light: '#ffffff' }
   });
 
   const ctx = canvas.getContext('2d');
@@ -795,7 +807,7 @@ async function generarQRConLogo(mesa, token) {
       ctx.drawImage(logo, x, y, logoSize, logoSize);
       resolve(canvas.toDataURL('image/png'));
     };
-    logo.onerror = () => resolve(canvas.toDataURL('image/png'));
+    logo.onerror = () => resolve(canvas.toDataURL('image/png')); // Si el logo falla, devuelve el QR normal
   });
 }
 
@@ -818,23 +830,28 @@ if (btnGenerar) {
     const imagenesParaZip = [];
 
     for (const mesa of mesas) {
-      const hash = await generarHashQR(mesa);
-      const dataUrl = await generarQRConLogo(mesa, hash);
+      try {
+        const hash = await generarHashQR(mesa);
+        const dataUrl = await generarQRConLogo(mesa, hash);
 
-      const card = document.createElement('div');
-      card.className = 'qr-card';
-      card.innerHTML = `
-        <img src="${dataUrl}" alt="QR Mesa ${mesa}">
-        <h4>Mesa: ${mesa}</h4>
-        <button class="btn-download" data-mesa="${mesa}">⬇️ Descargar PNG</button>
-      `;
+        const card = document.createElement('div');
+        card.className = 'qr-card';
+        card.innerHTML = `
+          <img src="${dataUrl}" alt="QR Mesa ${mesa}">
+          <h4>Mesa: ${mesa}</h4>
+          <button class="btn-download" data-mesa="${mesa}">⬇️ Descargar PNG</button>
+        `;
 
-      card.querySelector('.btn-download').onclick = () => {
-        const a = document.createElement('a'); a.href = dataUrl; a.download = `qr-mesa-${mesa}.png`; a.click();
-      };
+        card.querySelector('.btn-download').onclick = () => {
+          const a = document.createElement('a'); a.href = dataUrl; a.download = `qr-mesa-${mesa}.png`; a.click();
+        };
 
-      container.appendChild(card);
-      imagenesParaZip.push({ mesa, dataUrl });
+        container.appendChild(card);
+        imagenesParaZip.push({ mesa, dataUrl });
+      } catch (err) {
+        alert(`Error al generar la mesa ${mesa}: ${err.message}`);
+        break; 
+      }
     }
 
     btnGenerar.textContent = '✨ Generar QRs';
@@ -848,6 +865,10 @@ if (btnZip) {
   btnZip.addEventListener('click', async () => {
     const imagenes = JSON.parse(btnZip.dataset.images);
     if (!imagenes || imagenes.length === 0) return;
+
+    if (typeof JSZip === 'undefined') {
+      return alert('La librería para crear el ZIP no se ha cargado.');
+    }
 
     const zip = new JSZip();
     const folder = zip.folder("Qrs-VillaParaiso");
@@ -866,15 +887,19 @@ if (btnZip) {
 }
 
 // =====================================================
-// 👁️ VER MENÚ (Bypass del Middleware para el Admin)
+// 👁️ VER MENÚ (Bypass del Middleware)
 // =====================================================
 const btnVerMenu = document.getElementById('btnVerMenu');
 if (btnVerMenu) {
   btnVerMenu.addEventListener('click', async () => {
-    // Generamos un token para la mesa ficticia 'admin' para que el middleware deje pasar
-    const mesaPrueba = 'admin'; 
+    const mesaInput = document.getElementById('mesaPreviewInput');
+    const mesaPrueba = mesaInput && mesaInput.value ? mesaInput.value.trim() : '1';
+    
+    // Generamos el hash correcto para que el middleware deje pasar
     const hash = await generarHashQR(mesaPrueba);
     const url = `https://villaparaiso.vercel.app/?mesa=${mesaPrueba}&t=${hash}`;
+    
+    // Abrimos en una pestaña nueva
     window.open(url, '_blank');
   });
 }
