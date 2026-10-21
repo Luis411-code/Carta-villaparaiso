@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Acceso Restringido · Villa Paraíso</title>
+  <link rel="icon" type="image/png" href="img/logo.png" />
+  <link href="https://fonts.bunny.net/css?family=cinzel:400,600,700|poppins:300,400,500,600" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: #0a120d;
+      color: #fdfaf5;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      text-align: center;
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(212,163,115,0.15) 0%, transparent 60%),
+        radial-gradient(circle at 50% 100%, rgba(46,125,50,0.15) 0%, transparent 50%);
+    }
+    .card {
+      background: #142118;
+      border: 1px solid rgba(212,163,115,0.3);
+      border-radius: 20px;
+      padding: 40px 30px;
+      max-width: 400px;
+      width: 100%;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 0 1px #AE7E55 inset;
+      animation: fadeIn 0.6s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    
+    .logo {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      margin-bottom: 20px;
+      border: 3px solid #D4A373;
+      padding: 5px;
+      background: #fdfaf5;
+    }
+    .icon {
+      font-size: 3rem;
+      margin-bottom: 15px;
+      display: block;
+    }
+    h1 {
+      font-family: 'Cinzel', serif;
+      font-size: 1.8rem;
+      color: #D4A373;
+      margin-bottom: 10px;
+      letter-spacing: 1px;
+    }
+    .subtitle {
+      font-size: 0.9rem;
+      color: #999;
+      margin-bottom: 25px;
+      line-height: 1.5;
+    }
+    .highlight {
+      color: #C62828;
+      font-weight: 600;
+    }
+    .qr-box {
+      background: #fdfaf5;
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 20px;
+      display: inline-block;
+    }
+    .qr-box p {
+      color: #2a2a2a;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-top: 5px;
+    }
+    .btn {
+      display: inline-block;
+      background: #2E7D32;
+      color: #fff;
+      text-decoration: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: background 0.2s;
+    }
+    .btn:hover { background: #1B5E20; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <img src="img/logo.png" alt="Logo Villa Paraíso" class="logo" onerror="this.style.display='none'">
+    
+    <span class="icon">📵</span>
+    
+    <h1>Acceso Restringido</h1>
+    
+    <p class="subtitle">
+      Para ver nuestra carta digital y hacer tu comanda, es necesario estar sentado en el restaurante.
+      <br><br>
+      Por favor, <span class="highlight">escanea el código QR</span> que se encuentra en tu mesa.
+    </p>
+    
+    <div class="qr-box">
+      <h2 style="font-size: 2rem; margin: 0;">📱</h3>
+      <p>Busca el QR en tu mesa</p>
+    </div>
+
+    <br>
+
+    <a href="https://villaparaiso.vercel.app/" class="btn" style="background: #D4A373; color: #2a2a2a;">Ir al inicio</a>
+  </div>
+</body>
+</html>
