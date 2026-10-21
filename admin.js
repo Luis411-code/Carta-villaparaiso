@@ -71,6 +71,7 @@ supabase.auth.getSession().then(({ data: { session } }) => {
     adminScreen.classList.remove('hidden');
     userEmail.textContent = session.user.email;
     loadMenu();
+    suscribirRealtime();
   } else {
     loginScreen.classList.remove('hidden');
     adminScreen.classList.add('hidden');
@@ -83,6 +84,7 @@ supabase.auth.onAuthStateChange((event, session) => {
     adminScreen.classList.remove('hidden');
     userEmail.textContent = session.user.email;
     if (!hasUnsavedChanges) loadMenu();
+    suscribirRealtime();
   } else if (event === 'SIGNED_OUT') {
     loginScreen.classList.remove('hidden');
     adminScreen.classList.add('hidden');
@@ -95,7 +97,7 @@ supabase.auth.onAuthStateChange((event, session) => {
 const tabs = document.querySelectorAll('.admin-tab');
 const tabCarta = document.getElementById('tabCarta');
 const tabPedidos = document.getElementById('tabPedidos');
-const tabQrs = document.getElementById('tabQrs'); // 👈 Nueva pestaña
+const tabQrs = document.getElementById('tabQrs');
 const pedidosBadge = document.getElementById('pedidosBadge');
 
 let tabActual = 'carta';
@@ -108,7 +110,7 @@ tabs.forEach(tab => {
 
     tabCarta.classList.add('hidden');
     tabPedidos.classList.add('hidden');
-    tabQrs.classList.add('hidden'); // 👈 Ocultar QRs
+    tabQrs.classList.add('hidden');
 
     if (tabActual === 'carta') {
       tabCarta.classList.remove('hidden');
@@ -116,7 +118,7 @@ tabs.forEach(tab => {
       tabPedidos.classList.remove('hidden');
       cargarPedidos();
     } else if (tabActual === 'qrs') {
-      tabQrs.classList.remove('hidden'); // 👈 Mostrar QRs
+      tabQrs.classList.remove('hidden');
     }
   };
 });
@@ -247,7 +249,6 @@ function render() {
     const card = document.createElement('div');
     card.className = 'category-card';
 
-    // HEAD
     const head = document.createElement('div');
     head.className = 'category-head';
 
@@ -274,7 +275,6 @@ function render() {
     head.append(iconInput, nameInput, delCat);
     card.appendChild(head);
 
-    // BODY
     const body = document.createElement('div');
     body.className = 'category-body';
 
@@ -297,7 +297,6 @@ function render() {
       body.appendChild(addBtn);
     }
 
-    // BOTÓN SUBCATEGORÍAS
     const convertBtn = document.createElement('button');
     convertBtn.className = 'btn-secondary btn-small';
     convertBtn.style.marginTop = '12px';
@@ -473,7 +472,6 @@ function renderItem(arr, item) {
   descInput.rows = 2;
   descInput.oninput = () => { item.descripcion = descInput.value; markDirty(); };
 
-  // 👇 CAMPO DE ALÉRGENOS 👇
   const alergenosInput = document.createElement('input');
   alergenosInput.placeholder = '⚠️ Alérgenos (ej: Gluten, Lácteos, Mariscos)';
   alergenosInput.value = item.alergenos || '';
@@ -765,8 +763,6 @@ function escapeHTML(text) {
 // =====================================================
 // 📱 GENERADOR DE QRs
 // =====================================================
-
-// ⚠️ IMPORTANTE: Este secreto debe coincidir con el de middleware.ts
 const SECRETO_QR = 'VillaParaiso-Secreto-Muy-Dificil-De-Adivinar-2025';
 const URL_BASE = 'https://villaparaiso.vercel.app';
 
@@ -803,67 +799,82 @@ async function generarQRConLogo(mesa, token) {
   });
 }
 
-document.getElementById('btnGenerarQrs').addEventListener('click', async () => {
-  const inputVal = document.getElementById('inputMesas').value;
-  const container = document.getElementById('qrContainer');
-  const btnZip = document.getElementById('btnDescargarZip');
-  
-  if (!inputVal.trim()) return alert('Escribe al menos una mesa.');
+const btnGenerar = document.getElementById('btnGenerarQrs');
+if (btnGenerar) {
+  btnGenerar.addEventListener('click', async () => {
+    const inputVal = document.getElementById('inputMesas').value;
+    const container = document.getElementById('qrContainer');
+    const btnZip = document.getElementById('btnDescargarZip');
+    
+    if (!inputVal.trim()) return alert('Escribe al menos una mesa.');
 
-  container.innerHTML = '';
-  btnZip.style.display = 'none';
-  btnZip.dataset.images = JSON.stringify([]);
+    container.innerHTML = '';
+    btnZip.style.display = 'none';
+    btnZip.dataset.images = JSON.stringify([]);
 
-  const mesas = inputVal.split(',').map(m => m.trim()).filter(m => m !== '');
-  document.getElementById('btnGenerarQrs').textContent = 'Generando...';
+    const mesas = inputVal.split(',').map(m => m.trim()).filter(m => m !== '');
+    btnGenerar.textContent = 'Generando...';
 
-  const imagenesParaZip = [];
+    const imagenesParaZip = [];
 
-  for (const mesa of mesas) {
-    const hash = await generarHashQR(mesa);
-    const dataUrl = await generarQRConLogo(mesa, hash);
+    for (const mesa of mesas) {
+      const hash = await generarHashQR(mesa);
+      const dataUrl = await generarQRConLogo(mesa, hash);
 
-    const card = document.createElement('div');
-    card.className = 'qr-card';
-    card.innerHTML = `
-      <img src="${dataUrl}" alt="QR Mesa ${mesa}">
-      <h4>Mesa: ${mesa}</h4>
-      <button class="btn-download" data-mesa="${mesa}">⬇️ Descargar PNG</button>
-    `;
+      const card = document.createElement('div');
+      card.className = 'qr-card';
+      card.innerHTML = `
+        <img src="${dataUrl}" alt="QR Mesa ${mesa}">
+        <h4>Mesa: ${mesa}</h4>
+        <button class="btn-download" data-mesa="${mesa}">⬇️ Descargar PNG</button>
+      `;
 
-    card.querySelector('.btn-download').onclick = () => {
-      const a = document.createElement('a'); a.href = dataUrl; a.download = `qr-mesa-${mesa}.png`; a.click();
-    };
+      card.querySelector('.btn-download').onclick = () => {
+        const a = document.createElement('a'); a.href = dataUrl; a.download = `qr-mesa-${mesa}.png`; a.click();
+      };
 
-    container.appendChild(card);
-    imagenesParaZip.push({ mesa, dataUrl });
-  }
+      container.appendChild(card);
+      imagenesParaZip.push({ mesa, dataUrl });
+    }
 
-  document.getElementById('btnGenerarQrs').textContent = '✨ Generar QRs';
-  btnZip.style.display = 'block';
-  btnZip.dataset.images = JSON.stringify(imagenesParaZip);
-});
-
-document.getElementById('btnDescargarZip').addEventListener('click', async () => {
-  const imagenes = JSON.parse(document.getElementById('btnDescargarZip').dataset.images);
-  if (!imagenes || imagenes.length === 0) return;
-
-  const zip = new JSZip();
-  const folder = zip.folder("Qrs-VillaParaiso");
-
-  imagenes.forEach(img => {
-    const base64Data = img.dataUrl.replace(/^data:image\/png;base64,/, "");
-    folder.file(`qr-mesa-${img.mesa}.png`, base64Data, { base64: true });
+    btnGenerar.textContent = '✨ Generar QRs';
+    btnZip.style.display = 'block';
+    btnZip.dataset.images = JSON.stringify(imagenesParaZip);
   });
+}
 
-  const content = await zip.generateAsync({ type: "blob" });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(content);
-  a.download = "Qrs-VillaParaiso.zip";
-  a.click();
-});
+const btnZip = document.getElementById('btnDescargarZip');
+if (btnZip) {
+  btnZip.addEventListener('click', async () => {
+    const imagenes = JSON.parse(btnZip.dataset.images);
+    if (!imagenes || imagenes.length === 0) return;
 
-// Iniciar Realtime al cargar la sesión
-supabase.auth.getSession().then(({ data: { session } }) => {
-  if (session) suscribirRealtime();
-});
+    const zip = new JSZip();
+    const folder = zip.folder("Qrs-VillaParaiso");
+
+    imagenes.forEach(img => {
+      const base64Data = img.dataUrl.replace(/^data:image\/png;base64,/, "");
+      folder.file(`qr-mesa-${img.mesa}.png`, base64Data, { base64: true });
+    });
+
+    const content = await zip.generateAsync({ type: "blob" });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(content);
+    a.download = "Qrs-VillaParaiso.zip";
+    a.click();
+  });
+}
+
+// =====================================================
+// 👁️ VER MENÚ (Bypass del Middleware para el Admin)
+// =====================================================
+const btnVerMenu = document.getElementById('btnVerMenu');
+if (btnVerMenu) {
+  btnVerMenu.addEventListener('click', async () => {
+    // Generamos un token para la mesa ficticia 'admin' para que el middleware deje pasar
+    const mesaPrueba = 'admin'; 
+    const hash = await generarHashQR(mesaPrueba);
+    const url = `https://villaparaiso.vercel.app/?mesa=${mesaPrueba}&t=${hash}`;
+    window.open(url, '_blank');
+  });
+}

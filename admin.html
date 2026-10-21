@@ -8,9 +8,9 @@
   <link rel="stylesheet" href="admin.css" />
   <link href="https://fonts.bunny.net/css?family=cinzel:400,600,700|poppins:300,400,500,600" rel="stylesheet" />
   
-  <!-- Librerías para generar QRs y descargar ZIP -->
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <!-- Librerías para generar QRs y descargar ZIP (usando unpkg y defer) -->
+  <script defer src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script defer src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"></script>
 </head>
 <body>
 
@@ -109,7 +109,8 @@
       <div class="admin-actions">
         <button id="addCategoryBtn" class="btn-add">+ Añadir categoría</button>
         <button id="reloadBtn" class="btn-secondary">🔄 Recargar</button>
-        <a href="index.html" target="_blank" class="btn-secondary">👁️ Ver menú</a>
+        <!-- Botón modificado para que el JS le asigne la URL segura -->
+        <button id="btnVerMenu" class="btn-secondary">👁️ Ver menú</button>
       </div>
 
       <div id="categoriesContainer" class="categories-container"></div>
