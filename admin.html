@@ -7,6 +7,10 @@
   <link rel="icon" type="image/png" href="img/logo.png" />
   <link rel="stylesheet" href="admin.css" />
   <link href="https://fonts.bunny.net/css?family=cinzel:400,600,700|poppins:300,400,500,600" rel="stylesheet" />
+  
+  <!-- Librerías para generar QRs y descargar ZIP -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 </head>
 <body>
 
@@ -43,20 +47,27 @@
       </div>
     </header>
 
+    <!-- 🗂️ TABS -->
+    <nav class="admin-tabs">
+      <button class="admin-tab active" data-tab="carta">🍽️ Carta</button>
+      <button class="admin-tab" data-tab="pedidos">
+        📋 Pedidos
+        <span id="pedidosBadge" class="tab-badge hidden">0</span>
+      </button>
+      <button class="admin-tab" data-tab="qrs">📱 Generar QRs</button>
+    </nav>
+
     <div id="statusBar" class="status-bar hidden">
       <span id="statusText">Cambios sin guardar</span>
       <button id="saveBtn" class="btn-primary">💾 Guardar cambios</button>
     </div>
 
-    <main class="admin-main">
+    <!-- ==================== TAB: CARTA ==================== -->
+    <main id="tabCarta" class="admin-main">
 
-      <!-- 🏠 CONFIGURACIÓN DEL SITIO -->
       <section class="site-config">
         <h2 class="site-config-title">🏠 Textos de la Portada y el Pie de Página</h2>
-        <p class="site-config-help">
-          Cambia aquí los textos que ven los clientes al abrir la carta. 
-          Solo escribe el texto que quieras mostrar.
-        </p>
+        <p class="site-config-help">Cambia aquí los textos que ven los clientes al abrir la carta.</p>
 
         <h3 class="site-config-subtitle">📌 Encabezado de la página</h3>
         <div class="site-config-grid">
@@ -72,34 +83,29 @@
             <label>Descripción corta</label>
             <input type="text" id="site-tagline" placeholder="Cocina del mar & parrilla" />
           </div>
-          <div class="site-field">
+          <div class="site-field full">
             <label>Horario de apertura</label>
             <input type="text" id="site-horas" placeholder="🕐 12:00 - 23:00" />
           </div>
-          
         </div>
 
         <h3 class="site-config-subtitle">📌 Pie de página</h3>
         <div class="site-config-grid">
           <div class="site-field full">
             <label>Mensaje de agradecimiento</label>
-            <input type="text" id="site-footerMensaje" 
-                   placeholder="Ejemplo: Gracias por preferirnos" />
+            <input type="text" id="site-footerMensaje" placeholder="Ejemplo: Gracias por preferirnos" />
           </div>
           <div class="site-field full">
             <label>Frase secundaria (opcional)</label>
-            <input type="text" id="site-footerSub" 
-                   placeholder="Ejemplo: Será un placer atenderle" />
+            <input type="text" id="site-footerSub" placeholder="Ejemplo: Será un placer atenderle" />
           </div>
           <div class="site-field full">
             <label>Texto de copyright</label>
-            <input type="text" id="site-footerCopy" 
-                   placeholder="Ejemplo: © 2025 Villa Paraíso Guardalavaca" />
+            <input type="text" id="site-footerCopy" placeholder="Ejemplo: © 2025 Villa Paraíso Guardalavaca" />
           </div>
         </div>
       </section>
 
-      <!-- 🍽️ CATEGORÍAS -->
       <div class="admin-actions">
         <button id="addCategoryBtn" class="btn-add">+ Añadir categoría</button>
         <button id="reloadBtn" class="btn-secondary">🔄 Recargar</button>
@@ -107,6 +113,43 @@
       </div>
 
       <div id="categoriesContainer" class="categories-container"></div>
+    </main>
+
+    <!-- ==================== TAB: PEDIDOS ==================== -->
+    <main id="tabPedidos" class="admin-main hidden">
+      <div class="pedidos-toolbar">
+        <button id="refreshPedidosBtn" class="btn-secondary">🔄 Refrescar</button>
+        <span id="rtStatus" class="rt-status">🟢 En vivo</span>
+        <button id="toggleHistorial" class="btn-secondary">📁 Ver historial</button>
+      </div>
+
+      <div id="pedidosContainer" class="pedidos-container">
+        <!-- Se llena desde JS -->
+      </div>
+    </main>
+
+    <!-- ==================== TAB: GENERADOR DE QRs ==================== -->
+    <main id="tabQrs" class="admin-main hidden">
+      <section class="site-config">
+        <h2 class="site-config-title">📱 Generador de Códigos QR</h2>
+        <p class="site-config-help">
+          Escribe los nombres o números de tus mesas separados por comas. El sistema generará los QRs seguros con tu logo en el centro, listos para imprimir.
+        </p>
+
+        <div class="site-field full" style="margin-bottom: 15px;">
+          <label>Mesas (separadas por comas)</label>
+          <input type="text" id="inputMesas" value="1, 2, 3, 4, 5, 6, 7, 8, 9, 10" placeholder="Ej: 1, 2, 3, Barra, Terraza" />
+        </div>
+
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <button id="btnGenerarQrs" class="btn-add" style="flex: 1;">✨ Generar QRs</button>
+          <button id="btnDescargarZip" class="btn-primary" style="flex: 1; background: var(--dark); display: none;">📦 Descargar Todos (ZIP)</button>
+        </div>
+      </section>
+
+      <div id="qrContainer" class="qr-grid">
+        <!-- Aquí se mostrarán los QRs generados -->
+      </div>
     </main>
 
   </div>
