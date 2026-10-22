@@ -369,48 +369,30 @@ function renderItems(items) {
   return grid;
 }
 
+// =====================================================
+// 📸 FOTO GRANDE + LISTA DE PLATOS
+// =====================================================
 function renderGallery(imagenUrl, items) {
-  const visibles = (items || []).filter(estaDisponible);
-  const wrapper = document.createElement('div');
-  wrapper.className = 'carousel-container';
+  const container = document.createElement('div');
+  container.className = 'gallery-layout';
 
+  // 1. Foto Grande Arriba (sin textos)
   if (imagenUrl) {
-    const photo = document.createElement('div');
-    photo.className = 'carousel-card photo-card';
+    const photoWrapper = document.createElement('div');
+    photoWrapper.className = 'dish-photo-header';
     const img = document.createElement('img');
-    img.src = imagenUrl; img.loading = 'lazy';
-    img.onerror = () => { img.style.display = 'none'; photo.style.background = 'linear-gradient(135deg, #1a1a1a, #2a2a2a)'; };
-    photo.appendChild(img); wrapper.appendChild(photo);
+    img.src = imagenUrl; 
+    img.loading = 'lazy';
+    img.onerror = () => { photoWrapper.style.display = 'none'; };
+    photoWrapper.appendChild(img); 
+    container.appendChild(photoWrapper);
   }
 
-  visibles.forEach(item => {
-    const card = document.createElement('div');
-    card.className = 'carousel-card variant-card';
-    
-    const descHTML = item.descripcion ? `<p class="variant-desc">${escapeHTML(item.descripcion)}</p>` : '';
-    const alergenosHTML = item.alergenos ? `<span class="badge alergeno" style="margin-top:8px;">⚠️ Contiene: ${escapeHTML(item.alergenos)}</span>` : '';
-    const addBtnHTML = mesaActual ? `<button class="btn-add-item" data-nombre="${escapeHTML(item.nombre)}" data-precio="${item.precio}">+ Añadir a la comanda</button>` : '';
+  // 2. Lista de platos normal debajo de la foto
+  const itemsGrid = renderItems(items);
+  container.appendChild(itemsGrid);
 
-    card.innerHTML = `
-      <div class="variant-header" style="flex-direction: column; gap: 4px; align-items: flex-start;">
-        <span class="variant-name" style="font-size: 1.2rem;">${escapeHTML(item.nombre || '')}</span>
-        <span class="variant-price" style="font-size: 1.1rem;">${formatPrice(item.precio)}</span>
-      </div>
-      ${descHTML}
-      <div>${alergenosHTML}</div>
-      <div style="margin-top: auto; padding-top: 15px; width: 100%;">${addBtnHTML}</div>
-    `;
-    wrapper.appendChild(card);
-  });
-
-  wrapper.querySelectorAll('.btn-add-item').forEach(btn => {
-    btn.onclick = (e) => {
-      e.stopPropagation();
-      agregarAlCarrito(btn.dataset.nombre, parseFloat(btn.dataset.precio) || 0);
-    };
-  });
-
-  return wrapper;
+  return container;
 }
 
 function abrirCarrito() { actualizarCabeceraComanda(); cartOverlay.classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
