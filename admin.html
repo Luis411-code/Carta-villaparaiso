@@ -7,14 +7,10 @@
   <link rel="icon" type="image/png" href="img/logo.png" />
   <link rel="stylesheet" href="admin.css" />
   <link href="https://fonts.bunny.net/css?family=cinzel:400,600,700|poppins:300,400,500,600" rel="stylesheet" />
-  
-  <!-- Librerías para generar QRs (Usando cdnjs que es más estable) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
 
-  <!-- 🔒 LOGIN -->
+  <!-- 🔒 PANTALLA DE LOGIN -->
   <div id="loginScreen" class="login-screen">
     <div class="login-card">
       <img src="img/logo.png" alt="Logo" class="login-logo" />
@@ -30,9 +26,10 @@
     </div>
   </div>
 
-  <!-- 🛠️ PANEL -->
+  <!-- 🛠️ PANEL PRINCIPAL -->
   <div id="adminScreen" class="admin-screen hidden">
 
+    <!-- HEADER -->
     <header class="admin-header">
       <div class="admin-header-left">
         <img src="img/logo.png" alt="Logo" class="admin-logo" />
@@ -47,7 +44,7 @@
       </div>
     </header>
 
-    <!-- 🗂️ TABS -->
+    <!-- PESTAÑAS (TABS) -->
     <nav class="admin-tabs">
       <button class="admin-tab active" data-tab="carta">🍽️ Carta</button>
       <button class="admin-tab" data-tab="pedidos">
@@ -57,17 +54,21 @@
       <button class="admin-tab" data-tab="qrs">📱 Generar QRs</button>
     </nav>
 
+    <!-- BARRA DE GUARDAR CAMBIOS -->
     <div id="statusBar" class="status-bar hidden">
       <span id="statusText">Cambios sin guardar</span>
       <button id="saveBtn" class="btn-primary">💾 Guardar cambios</button>
     </div>
 
-    <!-- ==================== TAB: CARTA ==================== -->
+    <!-- ==================== PESTAÑA: CARTA ==================== -->
     <main id="tabCarta" class="admin-main">
 
       <section class="site-config">
         <h2 class="site-config-title">🏠 Textos de la Portada y el Pie de Página</h2>
-        <p class="site-config-help">Cambia aquí los textos que ven los clientes al abrir la carta.</p>
+        <p class="site-config-help">
+          Cambia aquí los textos que ven los clientes al abrir la carta.
+          Solo escribe el texto que quieras mostrar.
+        </p>
 
         <h3 class="site-config-subtitle">📌 Encabezado de la página</h3>
         <div class="site-config-grid">
@@ -83,7 +84,7 @@
             <label>Descripción corta</label>
             <input type="text" id="site-tagline" placeholder="Cocina del mar & parrilla" />
           </div>
-          <div class="site-field full">
+          <div class="site-field">
             <label>Horario de apertura</label>
             <input type="text" id="site-horas" placeholder="🕐 12:00 - 23:00" />
           </div>
@@ -109,19 +110,13 @@
       <div class="admin-actions">
         <button id="addCategoryBtn" class="btn-add">+ Añadir categoría</button>
         <button id="reloadBtn" class="btn-secondary">🔄 Recargar</button>
-        
-        <!-- NUEVO BOTÓN VER MENÚ CON SELECTOR DE MESA -->
-        <div style="display: flex; gap: 5px; align-items: center; background: #fff; border: 2px solid var(--border); border-radius: 10px; padding: 2px 5px;">
-          <span style="font-size: 0.8rem; color: var(--gray); padding-left: 5px;">Mesa:</span>
-          <input type="text" id="mesaPreviewInput" value="1" style="width: 50px; border: none; outline: none; text-align: center; font-weight: 600; font-family: inherit;" />
-          <button id="btnVerMenu" class="btn-secondary" style="border: none; background: var(--dark); color: white;">👁️ Ver menú</button>
-        </div>
+        <button id="verMenuBtn" class="btn-secondary">👁️ Ver menú</button>
       </div>
 
       <div id="categoriesContainer" class="categories-container"></div>
     </main>
 
-    <!-- ==================== TAB: PEDIDOS ==================== -->
+    <!-- ==================== PESTAÑA: PEDIDOS ==================== -->
     <main id="tabPedidos" class="admin-main hidden">
       <div class="pedidos-toolbar">
         <button id="refreshPedidosBtn" class="btn-secondary">🔄 Refrescar</button>
@@ -129,33 +124,31 @@
         <button id="toggleHistorial" class="btn-secondary">📁 Ver historial</button>
       </div>
 
-      <div id="pedidosContainer" class="pedidos-container"></div>
+      <div id="pedidosContainer" class="pedidos-container">
+        <!-- Se llena desde JS -->
+      </div>
     </main>
 
-    <!-- ==================== TAB: GENERADOR DE QRs ==================== -->
+    <!-- ==================== PESTAÑA: GENERADOR QRs ==================== -->
     <main id="tabQrs" class="admin-main hidden">
-      <section class="site-config">
-        <h2 class="site-config-title">📱 Generador de Códigos QR</h2>
-        <p class="site-config-help">
-          Escribe los nombres o números de tus mesas separados por comas. El sistema generará los QRs seguros.
+      <div style="background: white; padding: 24px; border-radius: 14px; max-width: 500px; margin: 0 auto; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border-left: 4px solid var(--primary);">
+        <h2 style="font-family: 'Cinzel', serif; color: var(--dark); margin-bottom: 10px;">📱 Generar Código QR</h2>
+        <p style="font-size: 0.85rem; color: var(--gray); margin-bottom: 20px;">
+          Escribe el número de mesa para generar su código QR único. Este código ya incluye el token de seguridad para que nadie pueda entrar sin escanearlo.
         </p>
 
-        <div class="site-field full" style="margin-bottom: 15px;">
-          <label>Mesas (separadas por comas)</label>
-          <input type="text" id="inputMesas" value="1, 2, 3, 4, 5, 6, 7, 8, 9, 10" placeholder="Ej: 1, 2, 3, Barra, Terraza" />
+        <div style="display: flex; gap: 10px; margin-bottom: 24px;">
+          <input type="text" id="qr-mesa-input" placeholder="Ej: 1" style="flex: 1; padding: 12px; border: 2px solid var(--border); border-radius: 8px; font-family: inherit; outline: none;">
+          <button id="qr-generar-btn" class="btn-primary" style="padding: 12px 20px;">Generar QR</button>
         </div>
 
-        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-          <button id="btnGenerarQrs" class="btn-add" style="flex: 1;">✨ Generar QRs</button>
-          <button id="btnDescargarZip" class="btn-primary" style="flex: 1; background: var(--dark); display: none;">📦 Descargar Todos (ZIP)</button>
-        </div>
-      </section>
-
-      <div id="qrContainer" class="qr-grid"></div>
+        <div id="qr-resultado"></div>
+      </div>
     </main>
 
   </div>
 
+  <!-- SCRIPT PRINCIPAL -->
   <script type="module" src="admin.js"></script>
 </body>
 </html>

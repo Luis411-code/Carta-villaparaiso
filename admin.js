@@ -414,6 +414,18 @@ async function generarHash(mesa) {
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 12);
 }
+// 👁️ Botón "Ver Menú" con token de seguridad
+const verMenuBtn = document.getElementById('verMenuBtn');
+if (verMenuBtn) {
+  verMenuBtn.onclick = async () => {
+    // Generamos un token para una mesa de prueba llamada "preview"
+    const hash = await generarHash('preview');
+    const url = `https://villaparaiso.vercel.app/?mesa=preview&t=${hash}`;
+    
+    // Abrimos el menú en una nueva pestaña
+    window.open(url, '_blank');
+  };
+}
 
 if (qrGenerarBtn) {
   qrGenerarBtn.onclick = async () => {
