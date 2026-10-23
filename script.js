@@ -41,11 +41,11 @@ function detectarMesa() {
   if (mesa && mesa.trim()) {
     mesaActual = mesa.trim();
     localStorage.setItem(MESA_KEY, mesaActual);
-    cartBtn.classList.remove('hidden');
+    if (cartBtn) cartBtn.classList.remove('hidden');
   } else {
     mesaActual = null;
     localStorage.removeItem(MESA_KEY);
-    cartBtn.classList.add('hidden');
+    if (cartBtn) cartBtn.classList.add('hidden');
   }
 }
 
@@ -134,7 +134,7 @@ function actualizarUI() {
   }
 
   cartTotal.textContent = formatPrice(calcularTotal());
-
+  // Nota: Se eliminó el bloque que cambiaba el botón a "✓ En la comanda"
 }
 
 // ==================== TOAST Y ENVÍO ====================
@@ -228,10 +228,10 @@ function renderMenu() {
         subTitle.className = 'subcategory-title';
         subTitle.textContent = sub.titulo || '';
         section.appendChild(subTitle);
-        section.appendChild(sub.imagen || sub.imagenes ? renderGallery(sub, sub.items) : renderItems(sub.items || []));
+        section.appendChild(sub.imagenes?.length || sub.imagen ? renderGallery(sub, sub.items) : renderItems(sub.items || []));
       });
     } else {
-      section.appendChild(cat.imagen || cat.imagenes ? renderGallery(cat, cat.items) : renderItems(cat.items || []));
+      section.appendChild(cat.imagenes?.length || cat.imagen ? renderGallery(cat, cat.items) : renderItems(cat.items || []));
     }
     menuContainer.appendChild(section);
   });
@@ -276,6 +276,7 @@ function renderGallery(obj, items) {
     urls.forEach((url, index) => {
       const img = document.createElement('img');
       img.src = url;
+      img.loading = 'lazy';
       if (index === 0) img.classList.add('active');
       carousel.appendChild(img);
     });
