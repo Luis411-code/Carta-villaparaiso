@@ -32,18 +32,32 @@
     </div>
   </header>
 
+  <!-- Filtros Rápidos (Punto 3) -->
+  <div class="filters-bar" id="filtersBar">
+    <button class="filter-btn" data-filter="vegetariano">🌱 Vegetariano</button>
+    <button class="filter-btn" data-filter="sin-gluten">🌾 Sin Gluten</button>
+    <button class="filter-btn" data-filter="picante">🌶️ Picante</button>
+  </div>
+
   <nav class="categories" id="categories"></nav>
+  
+  <!-- Contenedor de Recomendados (Punto 1) -->
+  <section id="destacados" class="category-section" style="display: none;">
+    <h2 class="category-title"><span>🌟</span> RECOMENDADOS</h2>
+    <div id="destacadosContainer" class="items-grid"></div>
+  </section>
+
   <main id="menu" class="menu-container"></main>
 
   <footer class="footer">
     <div class="footer-ornament">✦ ✦ ✦</div>
     <p class="footer-message" id="footerMensaje">Gracias por preferirnos</p>
     <p class="small" id="footerSub">Será un placer atenderle</p>
-    <p class="small" id="footerCopy">© 2025 Villa Paraíso Guardalavaca</p>
+    <p class="small" id="footerCopy">© 2026 Villa Paraíso Guardalavaca</p>
   </footer>
 
   <!-- 📋 BOTÓN FLOTANTE DE LA COMANDA -->
-  <button id="cartBtn" class="cart-btn hidden" aria-label="Ver comanda">
+  <button id="cartBtn" class="cart-btn hidden" aria-label="Ver Orden">
     <span class="cart-icon">📋</span>
     <span id="cartCount" class="cart-count">0</span>
   </button>
@@ -52,15 +66,16 @@
   <div id="cartOverlay" class="cart-overlay hidden">
     <div id="cartPanel" class="cart-panel">
       <div class="cart-header">
-        <h2>📋 Pedido</h2>
+        <h2>📋 Tu Orden</h2>
         <button id="cartClose" class="cart-close" aria-label="Cerrar">✕</button>
       </div>
       <div id="cartItems" class="cart-items"></div>
+      
       <div class="cart-footer">
-          <div class="cart-field">
-            <label for="cartNotas" style="color: var(--primary); font-weight: bold;">⚠️ Notas y Alergias</label>
-            <textarea id="cartNotas" placeholder="Ej: Alérgico al marisco, sin cebolla, término medio..." rows="2" style="border-color: var(--primary-light);"></textarea>
-          </div>
+        <div class="cart-field">
+          <label for="cartNotas" style="color: var(--primary); font-weight: bold;">⚠️ Notas y Alergias</label>
+          <textarea id="cartNotas" placeholder="Ej: Alérgico al marisco, sin cebolla..." rows="2" style="border-color: var(--primary-light);"></textarea>
+        </div>
         <div class="cart-total">
           <span>Total:</span>
           <strong id="cartTotal">$0.00</strong>
@@ -74,8 +89,7 @@
   <div id="toast" class="toast hidden">
     <span class="toast-icon">✅</span>
     <div class="toast-content">
-      <strong id="toastTitle">Pedido enviada</strong>
-      <p id="toastMsg">Sera atendido en un momento</p>
+      <strong id="toastTitle">Pedido enviado</strong>
     </div>
   </div>
 

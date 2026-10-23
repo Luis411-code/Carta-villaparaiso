@@ -6,6 +6,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let menuData = { categories: [] };
 let mesaActual = null;
 let carrito = [];
+let filtroActivo = null; // null, 'vegetariano', 'sin-gluten', 'picante'
 
 const CARRITO_KEY = 'villa-paraiso-carrito';
 const MESA_KEY = 'villa-paraiso-mesa';
@@ -13,6 +14,9 @@ const MESA_KEY = 'villa-paraiso-mesa';
 // Elementos del DOM
 const categoriesNav = document.getElementById('categories');
 const menuContainer = document.getElementById('menu');
+const destacadosContainer = document.getElementById('destacadosContainer');
+const seccionDestacados = document.getElementById('destacados');
+const filtersBar = document.getElementById('filtersBar');
 const cartBtn = document.getElementById('cartBtn');
 const cartCount = document.getElementById('cartCount');
 const cartOverlay = document.getElementById('cartOverlay');
@@ -33,6 +37,15 @@ const escapeHTML = (text) => {
   return div.innerHTML;
 };
 const estaDisponible = (item) => item.disponible !== false;
+
+// Comprobar si un plato cumple con el filtro activo
+function cumpleFiltro(item) {
+  if (!filtroActivo) return true;
+  if (filtroActivo === 'vegetariano' && item.vegetariano) return true;
+  if (filtroActivo === 'sin-gluten' && item.sinGluten) return true;
+  if (filtroActivo === 'picante' && item.badges && item.badges.includes('picante')) return true;
+  return false;
+}
 
 // ==================== LÓGICA DE MESA Y COMANDA ====================
 function detectarMesa() {
@@ -132,9 +145,7 @@ function actualizarUI() {
     });
     cartEnviar.disabled = false;
   }
-
   cartTotal.textContent = formatPrice(calcularTotal());
-  // Nota: Se eliminó el bloque que cambiaba el botón a "✓ En la comanda"
 }
 
 // ==================== TOAST Y ENVÍO ====================
@@ -187,16 +198,68 @@ function renderIconHTML(obj, size = '1.1em') {
   return '';
 }
 
+// Genera los iconos de alérgenos y características
+function renderItemIcons(item) {
+  let html = '<div class="item-icons">';
+  if (item.vegetariano) html += '<span title="Vegetariano">🌱</span>';
+  if (item.sinGluten) html += '<span title="Sin Gluten">🌾</span>';
+  
+  if (item.badges && Array.isArray(item.badges)) {
+    if (item.badges.includes('picante')) html += '<span title="Picante">🌶️</span>';
+    if (item.badges.includes('nuevo')) html += '<span title="Nuevo">✨</span>';
+    if (item.badges.includes('premium')) html += '<span title="Premium">👑</span>';
+  }
+
+  if (item.alergenos && Array.isArray(item.alergenos)) {
+    if (item.alergenos.includes('lacteos')) html += '<span title="Contiene Lácteos">🥛</span>';
+    if (item.alergenos.includes('marisco')) html += '<span title="Contiene Marisco">🦐</span>';
+    if (item.alergenos.includes('frutos-secos')) html += '<span title="Contiene Frutos Secos">🥜</span>';
+    if (item.alergenos.includes('huevo')) html += '<span title="Contiene Huevo">🥚</span>';
+  }
+  html += '</div>';
+  return html;
+}
+
 function renderMenu() {
   categoriesNav.innerHTML = '';
   menuContainer.innerHTML = '';
+  destacadosContainer.innerHTML = '';
+  let hayDestacados = false;
 
-  menuData.categories.forEach((cat, index) => {
-    let tiene = cat.subgrupos?.length > 0 ? cat.subgrupos.some(sub => (sub.items || []).some(estaDisponible)) : (cat.items || []).some(estaDisponible);
-    if (!tiene) return;
+  // 1. Filtrar datos primero
+  const categoriasFiltradas = menuData.categories.map(cat => {
+    if (cat.subgrupos && cat.subgrupos.length > 0) {
+      const subFiltrados = cat.subgrupos.map(sub => {
+        const itemsFiltrados = (sub.items || []).filter(i => estaDisponible(i) && cumpleFiltro(i));
+        return { ...sub, items: itemsFiltrados };
+      }).filter(sub => sub.items.length > 0);
+      return { ...cat, subgrupos: subFiltrados };
+    } else {
+      const itemsFiltrados = (cat.items || []).filter(i => estaDisponible(i) && cumpleFiltro(i));
+      return { ...cat, items: itemsFiltrados };
+    }
+  }).filter(cat => {
+    if (cat.subgrupos) return cat.subgrupos.length > 0;
+    return cat.items.length > 0;
+  });
 
+  // 2. Extraer Destacados (Punto 1)
+  categoriasFiltradas.forEach(cat => {
+    const allItems = cat.subgrupos ? cat.subgrupos.flatMap(s => s.items) : cat.items;
+    allItems.forEach(item => {
+      if (item.destacado) {
+        hayDestacados = true;
+        destacadosContainer.appendChild(renderItemCard(item));
+      }
+    });
+  });
+  seccionDestacados.style.display = hayDestacados ? 'block' : 'none';
+
+  // 3. Crear botones de categoría y secciones
+  categoriasFiltradas.forEach((cat, index) => {
     const btn = document.createElement('button');
     btn.className = 'category-btn';
+    btn.dataset.target = `cat-${index}`;
     btn.innerHTML = renderIconHTML(cat) + escapeHTML(cat.categoria || '');
     btn.onclick = () => {
       document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
@@ -204,13 +267,6 @@ function renderMenu() {
       document.getElementById(`cat-${index}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
     categoriesNav.appendChild(btn);
-  });
-
-  if (categoriesNav.firstChild) categoriesNav.firstChild.classList.add('active');
-
-  menuData.categories.forEach((cat, index) => {
-    let tiene = cat.subgrupos?.length > 0 ? cat.subgrupos.some(sub => (sub.items || []).some(estaDisponible)) : (cat.items || []).some(estaDisponible);
-    if (!tiene) return;
 
     const section = document.createElement('section');
     section.className = 'category-section';
@@ -221,52 +277,79 @@ function renderMenu() {
     title.innerHTML = renderIconHTML(cat, '1.2em') + escapeHTML(cat.categoria || '');
     section.appendChild(title);
 
-    if (cat.subgrupos?.length > 0) {
+    if (cat.subgrupos) {
       cat.subgrupos.forEach(sub => {
-        if ((sub.items || []).filter(estaDisponible).length === 0) return;
         const subTitle = document.createElement('h3');
         subTitle.className = 'subcategory-title';
         subTitle.textContent = sub.titulo || '';
         section.appendChild(subTitle);
-        section.appendChild(sub.imagenes?.length || sub.imagen ? renderGallery(sub, sub.items) : renderItems(sub.items || []));
+        if (sub.imagenes?.length || sub.imagen) {
+          section.appendChild(renderGallery(sub, sub.items));
+        } else {
+          const grid = document.createElement('div'); grid.className = 'items-grid';
+          sub.items.forEach(item => grid.appendChild(renderItemCard(item)));
+          section.appendChild(grid);
+        }
       });
     } else {
-      section.appendChild(cat.imagenes?.length || cat.imagen ? renderGallery(cat, cat.items) : renderItems(cat.items || []));
+      if (cat.imagenes?.length || cat.imagen) {
+        section.appendChild(renderGallery(cat, cat.items));
+      } else {
+        const grid = document.createElement('div'); grid.className = 'items-grid';
+        cat.items.forEach(item => grid.appendChild(renderItemCard(item)));
+        section.appendChild(grid);
+      }
     }
     menuContainer.appendChild(section);
   });
+
+  if (categoriesNav.firstChild) categoriesNav.firstChild.classList.add('active');
+
+  // 4. SCROLL SPY (Punto 2) - Detectar qué sección está visible
+  if (window.scrollSpy) window.scrollSpy.disconnect();
+  window.scrollSpy = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        const activeBtn = document.querySelector(`.category-btn[data-target="${id}"]`);
+        if (activeBtn && !activeBtn.classList.contains('active')) {
+          document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+          activeBtn.classList.add('active');
+          // Hacer scroll horizontal del botón para que se vea
+          activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        }
+      }
+    });
+  }, { rootMargin: '-100px 0px -60% 0px', threshold: 0 });
+
+  document.querySelectorAll('.category-section').forEach(sec => window.scrollSpy.observe(sec));
 }
 
-function renderItems(items) {
-  const grid = document.createElement('div');
-  grid.className = 'items-grid';
-  const visibles = (items || []).filter(estaDisponible);
-
-  visibles.forEach(item => {
-    const el = document.createElement('article');
-    el.className = 'menu-item';
-    const addBtnHTML = mesaActual ? `<button class="btn-add-item" data-nombre="${escapeHTML(item.nombre)}" data-precio="${item.precio}">+ Añadir</button>` : '';
-    el.innerHTML = `
-      <div class="item-info">
-        <div class="item-header">
-          <span class="item-name">${escapeHTML(item.nombre || 'Sin nombre')}</span>
-          <span class="item-price">${formatPrice(item.precio)}</span>
-        </div>
-        ${item.descripcion ? `<p class="item-desc">${escapeHTML(item.descripcion)}</p>` : ''}
-        ${addBtnHTML}
-      </div>`;
-    grid.appendChild(el);
+function renderItemCard(item) {
+  const el = document.createElement('article');
+  el.className = 'menu-item';
+  const addBtnHTML = mesaActual ? `<button class="btn-add-item" data-nombre="${escapeHTML(item.nombre)}" data-precio="${item.precio}">+ Añadir</button>` : '';
+  
+  el.innerHTML = `
+    <div class="item-info">
+      <div class="item-header">
+        <span class="item-name">${escapeHTML(item.nombre || 'Sin nombre')}</span>
+        <span class="item-price">${formatPrice(item.precio)}</span>
+      </div>
+      ${item.descripcion ? `<p class="item-desc">${escapeHTML(item.descripcion)}</p>` : ''}
+      ${renderItemIcons(item)}
+      ${addBtnHTML}
+    </div>`;
+    
+  el.querySelector('.btn-add-item')?.addEventListener('click', (e) => {
+    e.stopPropagation(); 
+    agregarAlCarrito(item.nombre, parseFloat(item.precio) || 0);
   });
-
-  grid.querySelectorAll('.btn-add-item').forEach(btn => {
-    btn.onclick = (e) => { e.stopPropagation(); agregarAlCarrito(btn.dataset.nombre, parseFloat(btn.dataset.precio) || 0); };
-  });
-  return grid;
+  return el;
 }
 
 function renderGallery(obj, items) {
   let urls = obj.imagenes?.length ? obj.imagenes : (obj.imagen ? [obj.imagen] : []);
-  const visibles = (items || []).filter(estaDisponible);
   const wrapper = document.createElement('div');
   wrapper.className = 'simple-gallery';
 
@@ -295,26 +378,7 @@ function renderGallery(obj, items) {
 
   const list = document.createElement('div');
   list.className = 'items-grid';
-  visibles.forEach(item => {
-    const el = document.createElement('article');
-    el.className = 'menu-item';
-    const addBtnHTML = mesaActual ? `<button class="btn-add-item" data-nombre="${escapeHTML(item.nombre)}" data-precio="${item.precio}">+ Añadir</button>` : '';
-    el.innerHTML = `
-      <div class="item-info">
-        <div class="item-header">
-          <span class="item-name">${escapeHTML(item.nombre || 'Sin nombre')}</span>
-          <span class="item-price">${formatPrice(item.precio)}</span>
-        </div>
-        ${item.descripcion ? `<p class="item-desc">${escapeHTML(item.descripcion)}</p>` : ''}
-        ${addBtnHTML}
-      </div>`;
-    list.appendChild(el);
-  });
-
-  list.querySelectorAll('.btn-add-item').forEach(btn => {
-    btn.onclick = (e) => { e.stopPropagation(); agregarAlCarrito(btn.dataset.nombre, parseFloat(btn.dataset.precio) || 0); };
-  });
-
+  items.forEach(item => list.appendChild(renderItemCard(item)));
   wrapper.appendChild(list);
   return wrapper;
 }
@@ -342,6 +406,21 @@ async function iniciar() {
   if (cartClose) cartClose.onclick = cerrarCarrito;
   if (cartEnviar) cartEnviar.onclick = enviarPedido;
   if (cartOverlay) cartOverlay.onclick = (e) => { if (e.target === cartOverlay) cerrarCarrito(); };
+
+  // Botones de Filtro (Punto 3)
+  filtersBar.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.onclick = () => {
+      if (btn.classList.contains('active')) {
+        btn.classList.remove('active');
+        filtroActivo = null;
+      } else {
+        filtersBar.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        filtroActivo = btn.dataset.filter;
+      }
+      renderMenu(); // Re-renderizar con el filtro
+    };
+  });
 
   try {
     const { data, error } = await supabase.from('menu').select('data').eq('id', 'main').single();
