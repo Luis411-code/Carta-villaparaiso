@@ -17,10 +17,28 @@ const statusBar = document.getElementById('statusBar');
 const saveBtn = document.getElementById('saveBtn');
 const addCategoryBtn = document.getElementById('addCategoryBtn');
 const reloadBtn = document.getElementById('reloadBtn');
+const verMenuBtn = document.getElementById('verMenuBtn');
+
+// Tabs
+const tabs = document.querySelectorAll('.admin-tab');
+const tabCarta = document.getElementById('tabCarta');
+const tabQrs = document.getElementById('tabQrs');
+
+// QR Elements
+const generarQrBtn = document.getElementById('generarQrBtn');
+const qrsContainer = document.getElementById('qrsContainer');
+const qrSecret = document.getElementById('qr-secret');
+const qrDesde = document.getElementById('qr-desde');
+const qrHasta = document.getElementById('qr-hasta');
+
+const SECRETO_DEFAULT = 'VillaParaiso-Secreto-Muy-Dificil-De-Adivinar-2025';
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 function markDirty() { hasUnsavedChanges = true; statusBar.classList.remove('hidden'); }
 
+// =====================================================
+// 🔐 AUTENTICACIÓN
+// =====================================================
 window.addEventListener('beforeunload', (e) => { if (hasUnsavedChanges) { e.preventDefault(); e.returnValue = ''; } });
 
 loginForm.addEventListener('submit', async (e) => {
@@ -43,6 +61,7 @@ supabase.auth.getSession().then(({ data: { session } }) => {
     adminScreen.classList.remove('hidden');
     userEmail.textContent = session.user.email;
     loadMenu();
+    configurarBotonVerMenu();
   } else {
     loginScreen.classList.remove('hidden');
     adminScreen.classList.add('hidden');
@@ -55,12 +74,118 @@ supabase.auth.onAuthStateChange((event, session) => {
     adminScreen.classList.remove('hidden');
     userEmail.textContent = session.user.email;
     loadMenu();
+    configurarBotonVerMenu();
   } else {
     loginScreen.classList.remove('hidden');
     adminScreen.classList.add('hidden');
   }
 });
 
+// =====================================================
+// 🗂️ SISTEMA DE PESTAÑAS (TABS)
+// =====================================================
+tabs.forEach(tab => {
+  tab.onclick = () => {
+    tabs.forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    const target = tab.dataset.tab;
+
+    if (target === 'carta') {
+      tabCarta.classList.remove('hidden');
+      tabQrs.classList.add('hidden');
+    } else {
+      tabCarta.classList.add('hidden');
+      tabQrs.classList.remove('hidden');
+    }
+  };
+});
+
+// =====================================================
+// 📱 GENERADOR DE QRs
+// =====================================================
+async function generarHash(mesa) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(mesa + qrSecret.value);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 12);
+}
+
+generarQrBtn.onclick = async () => {
+  const desde = parseInt(qrDesde.value);
+  const hasta = parseInt(qrHasta.value);
+
+  if (isNaN(desde) || isNaN(hasta) || desde > hasta) {
+    alert('Por favor, introduce un rango válido (la mesa "desde" debe ser menor o igual a "hasta").');
+    return;
+  }
+
+  qrsContainer.innerHTML = '';
+  generarQrBtn.disabled = true;
+  generarQrBtn.textContent = '⏳ Generando...';
+
+  const baseUrl = window.location.origin; // Obtiene https://villaparaiso.vercel.app
+
+  for (let i = desde; i <= hasta; i++) {
+    const mesa = i.toString();
+    const token = await generarHash(mesa);
+    const url = `${baseUrl}/?mesa=${mesa}&t=${token}`;
+
+    const card = document.createElement('div');
+    card.className = 'qr-card';
+    
+    const title = document.createElement('h3');
+    title.textContent = `Mesa ${mesa}`;
+    card.appendChild(title);
+
+    const canvas = document.createElement('canvas');
+    card.appendChild(canvas);
+
+    const downloadBtn = document.createElement('button');
+    downloadBtn.className = 'btn-descargar';
+    downloadBtn.textContent = '⬇️ Descargar';
+    downloadBtn.onclick = () => {
+      const link = document.createElement('a');
+      link.download = `QR_Mesa_${mesa}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    };
+    card.appendChild(downloadBtn);
+
+    qrsContainer.appendChild(card);
+
+    // Generar el QR en el canvas
+    await QRCode.toCanvas(canvas, url, {
+      width: 250,
+      margin: 2,
+      color: { dark: '#000000', light: '#FFFFFF' },
+      errorCorrectionLevel: 'H'
+    });
+  }
+
+  generarQrBtn.disabled = false;
+  generarQrBtn.textContent = '✨ Generar Códigos QR';
+};
+
+// =====================================================
+// 👁️ CONFIGURAR BOTÓN "VER MENÚ"
+// =====================================================
+async function configurarBotonVerMenu() {
+  // Genera un enlace válido para la Mesa 1 usando el secreto por defecto
+  const token = await (async () => {
+    const encoder = new TextEncoder();
+    const data = encoder.encode("1" + SECRETO_DEFAULT);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 12);
+  })();
+  
+  verMenuBtn.href = `${window.location.origin}/?mesa=1&t=${token}`;
+}
+
+// =====================================================
+// 🍽️ CARGAR Y GUARDAR MENÚ (Igual que antes)
+// =====================================================
 async function loadMenu() {
   try {
     const { data, error } = await supabase.from('menu').select('data').eq('id', 'main').single();
@@ -239,9 +364,6 @@ async function optimizeImage(file) {
   return new File([blob], `${file.name.replace(/\.[^.]+$/, '')}.webp`, { type: 'image/webp' });
 }
 
-// =====================================================
-// 📸 CAMPO DE GALERÍA MULTI-FOTO (Admin)
-// =====================================================
 function renderGalleryField(obj, labelText) {
   const wrap = document.createElement('div'); wrap.className = 'image-field';
   const label = document.createElement('label'); label.textContent = `📸 ${labelText} (Carrusel)`; wrap.appendChild(label);

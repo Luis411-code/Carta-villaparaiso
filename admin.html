@@ -7,6 +7,8 @@
   <link rel="icon" type="image/png" href="img/logo.png" />
   <link rel="stylesheet" href="admin.css" />
   <link href="https://fonts.bunny.net/css?family=cinzel:400,600,700|poppins:300,400,500,600" rel="stylesheet" />
+  <!-- Librería para generar QRs en el navegador -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 </head>
 <body>
 
@@ -46,10 +48,7 @@
     <!-- 🗂️ TABS -->
     <nav class="admin-tabs">
       <button class="admin-tab active" data-tab="carta">🍽️ Carta</button>
-      <button class="admin-tab" data-tab="pedidos">
-        📋 Pedidos
-        <span id="pedidosBadge" class="tab-badge hidden">0</span>
-      </button>
+      <button class="admin-tab" data-tab="qrs">📱 Generar QR</button>
     </nav>
 
     <div id="statusBar" class="status-bar hidden">
@@ -64,7 +63,6 @@
         <h2 class="site-config-title">🏠 Textos de la Portada y el Pie de Página</h2>
         <p class="site-config-help">
           Cambia aquí los textos que ven los clientes al abrir la carta.
-          Solo escribe el texto que quieras mostrar.
         </p>
 
         <h3 class="site-config-subtitle">📌 Encabezado de la página</h3>
@@ -107,22 +105,41 @@
       <div class="admin-actions">
         <button id="addCategoryBtn" class="btn-add">+ Añadir categoría</button>
         <button id="reloadBtn" class="btn-secondary">🔄 Recargar</button>
-        <a href="index.html" target="_blank" class="btn-secondary">👁️ Ver menú</a>
+        <!-- Modificado para abrir con el token de la Mesa 1 -->
+        <a href="#" id="verMenuBtn" target="_blank" class="btn-secondary">👁️ Ver menú (Mesa 1)</a>
       </div>
 
       <div id="categoriesContainer" class="categories-container"></div>
     </main>
 
-    <!-- ==================== TAB: PEDIDOS ==================== -->
-    <main id="tabPedidos" class="admin-main hidden">
-      <div class="pedidos-toolbar">
-        <button id="refreshPedidosBtn" class="btn-secondary">🔄 Refrescar</button>
-        <span id="rtStatus" class="rt-status">🟢 En vivo</span>
-        <button id="toggleHistorial" class="btn-secondary">📁 Ver historial</button>
-      </div>
+    <!-- ==================== TAB: GENERAR QR ==================== -->
+    <main id="tabQrs" class="admin-main hidden">
+      <section class="site-config">
+        <h2 class="site-config-title">📱 Generador de Códigos QR</h2>
+        <p class="site-config-help">
+          Genera e imprime los códigos QR para tus mesas. <strong>Importante:</strong> La "Clave Secreta" debe ser exactamente la misma que pusiste en tu archivo <code>middleware.ts</code>.
+        </p>
 
-      <div id="pedidosContainer" class="pedidos-container">
-        <!-- Se llena desde JS -->
+        <div class="site-config-grid">
+          <div class="site-field full">
+            <label>Clave Secreta (Middleware)</label>
+            <input type="text" id="qr-secret" value="VillaParaiso-Secreto-Muy-Dificil-De-Adivinar-2025" />
+          </div>
+          <div class="site-field">
+            <label>Mesa desde (Número)</label>
+            <input type="number" id="qr-desde" value="1" min="1" />
+          </div>
+          <div class="site-field">
+            <label>Mesa hasta (Número)</label>
+            <input type="number" id="qr-hasta" value="5" min="1" />
+          </div>
+        </div>
+
+        <button id="generarQrBtn" class="btn-primary" style="margin-top: 15px; width: 100%;">✨ Generar Códigos QR</button>
+      </section>
+
+      <div id="qrsContainer" class="qrs-grid">
+        <!-- Aquí se inyectarán los QRs generados -->
       </div>
     </main>
 
