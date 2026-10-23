@@ -142,10 +142,13 @@ body.has-mesa .category-section { scroll-margin-top: 130px; }
 .footer .small { font-family: var(--font-ui); font-size: 0.7rem; letter-spacing: 2px; text-transform: uppercase; margin-top: 8px; opacity: 0.6; }
 
 /* =====================================================
-   📸 FOTO GRANDE + LISTA DE PLATOS
+   📸 FOTO GRANDE (Sin textos encima ni al lado)
    ===================================================== */
 .gallery-layout {
-  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-bottom: 10px;
 }
 
 .dish-photo-header {
@@ -153,7 +156,7 @@ body.has-mesa .category-section { scroll-margin-top: 130px; }
   border-radius: 12px;
   overflow: hidden;
   margin-bottom: 20px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
   border: 2px solid var(--gold);
   background: #1a1a1a;
 }
