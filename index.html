@@ -32,16 +32,9 @@
     </div>
   </header>
 
-  <!-- Filtros Rápidos (Punto 3) -->
-  <div class="filters-bar" id="filtersBar">
-    <button class="filter-btn" data-filter="vegetariano">🌱 Vegetariano</button>
-    <button class="filter-btn" data-filter="sin-gluten">🌾 Sin Gluten</button>
-    <button class="filter-btn" data-filter="picante">🌶️ Picante</button>
-  </div>
-
   <nav class="categories" id="categories"></nav>
   
-  <!-- Contenedor de Recomendados (Punto 1) -->
+  <!-- Contenedor de Recomendados (Destacados) -->
   <section id="destacados" class="category-section" style="display: none;">
     <h2 class="category-title"><span>🌟</span> RECOMENDADOS</h2>
     <div id="destacadosContainer" class="items-grid"></div>
@@ -57,7 +50,7 @@
   </footer>
 
   <!-- 📋 BOTÓN FLOTANTE DE LA COMANDA -->
-  <button id="cartBtn" class="cart-btn hidden" aria-label="Ver Orden">
+  <button id="cartBtn" class="cart-btn hidden" aria-label="Ver comanda">
     <span class="cart-icon">📋</span>
     <span id="cartCount" class="cart-count">0</span>
   </button>
@@ -89,7 +82,7 @@
   <div id="toast" class="toast hidden">
     <span class="toast-icon">✅</span>
     <div class="toast-content">
-      <strong id="toastTitle">Pedido enviado</strong>
+      <strong id="toastTitle">Orden enviada</strong>
     </div>
   </div>
 

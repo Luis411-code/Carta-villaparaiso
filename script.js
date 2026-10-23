@@ -6,7 +6,6 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let menuData = { categories: [] };
 let mesaActual = null;
 let carrito = [];
-let filtroActivo = null; // null, 'vegetariano', 'sin-gluten', 'picante'
 
 const CARRITO_KEY = 'villa-paraiso-carrito';
 const MESA_KEY = 'villa-paraiso-mesa';
@@ -16,7 +15,6 @@ const categoriesNav = document.getElementById('categories');
 const menuContainer = document.getElementById('menu');
 const destacadosContainer = document.getElementById('destacadosContainer');
 const seccionDestacados = document.getElementById('destacados');
-const filtersBar = document.getElementById('filtersBar');
 const cartBtn = document.getElementById('cartBtn');
 const cartCount = document.getElementById('cartCount');
 const cartOverlay = document.getElementById('cartOverlay');
@@ -37,15 +35,6 @@ const escapeHTML = (text) => {
   return div.innerHTML;
 };
 const estaDisponible = (item) => item.disponible !== false;
-
-// Comprobar si un plato cumple con el filtro activo
-function cumpleFiltro(item) {
-  if (!filtroActivo) return true;
-  if (filtroActivo === 'vegetariano' && item.vegetariano) return true;
-  if (filtroActivo === 'sin-gluten' && item.sinGluten) return true;
-  if (filtroActivo === 'picante' && item.badges && item.badges.includes('picante')) return true;
-  return false;
-}
 
 // ==================== LÓGICA DE MESA Y COMANDA ====================
 function detectarMesa() {
@@ -198,18 +187,9 @@ function renderIconHTML(obj, size = '1.1em') {
   return '';
 }
 
-// Genera los iconos de alérgenos y características
+// Genera solo los iconos de alérgenos (se eliminaron los de características)
 function renderItemIcons(item) {
   let html = '<div class="item-icons">';
-  if (item.vegetariano) html += '<span title="Vegetariano">🌱</span>';
-  if (item.sinGluten) html += '<span title="Sin Gluten">🌾</span>';
-  
-  if (item.badges && Array.isArray(item.badges)) {
-    if (item.badges.includes('picante')) html += '<span title="Picante">🌶️</span>';
-    if (item.badges.includes('nuevo')) html += '<span title="Nuevo">✨</span>';
-    if (item.badges.includes('premium')) html += '<span title="Premium">👑</span>';
-  }
-
   if (item.alergenos && Array.isArray(item.alergenos)) {
     if (item.alergenos.includes('lacteos')) html += '<span title="Contiene Lácteos">🥛</span>';
     if (item.alergenos.includes('marisco')) html += '<span title="Contiene Marisco">🦐</span>';
@@ -226,28 +206,11 @@ function renderMenu() {
   destacadosContainer.innerHTML = '';
   let hayDestacados = false;
 
-  // 1. Filtrar datos primero
-  const categoriasFiltradas = menuData.categories.map(cat => {
-    if (cat.subgrupos && cat.subgrupos.length > 0) {
-      const subFiltrados = cat.subgrupos.map(sub => {
-        const itemsFiltrados = (sub.items || []).filter(i => estaDisponible(i) && cumpleFiltro(i));
-        return { ...sub, items: itemsFiltrados };
-      }).filter(sub => sub.items.length > 0);
-      return { ...cat, subgrupos: subFiltrados };
-    } else {
-      const itemsFiltrados = (cat.items || []).filter(i => estaDisponible(i) && cumpleFiltro(i));
-      return { ...cat, items: itemsFiltrados };
-    }
-  }).filter(cat => {
-    if (cat.subgrupos) return cat.subgrupos.length > 0;
-    return cat.items.length > 0;
-  });
-
-  // 2. Extraer Destacados (Punto 1)
-  categoriasFiltradas.forEach(cat => {
-    const allItems = cat.subgrupos ? cat.subgrupos.flatMap(s => s.items) : cat.items;
+  // 1. Renderizar Destacados
+  menuData.categories.forEach(cat => {
+    const allItems = cat.subgrupos ? cat.subgrupos.flatMap(s => s.items || []) : (cat.items || []);
     allItems.forEach(item => {
-      if (item.destacado) {
+      if (item.destacado && estaDisponible(item)) {
         hayDestacados = true;
         destacadosContainer.appendChild(renderItemCard(item));
       }
@@ -255,8 +218,11 @@ function renderMenu() {
   });
   seccionDestacados.style.display = hayDestacados ? 'block' : 'none';
 
-  // 3. Crear botones de categoría y secciones
-  categoriasFiltradas.forEach((cat, index) => {
+  // 2. Crear botones de categoría y secciones normales
+  menuData.categories.forEach((cat, index) => {
+    let tiene = cat.subgrupos?.length > 0 ? cat.subgrupos.some(sub => (sub.items || []).some(estaDisponible)) : (cat.items || []).some(estaDisponible);
+    if (!tiene) return;
+
     const btn = document.createElement('button');
     btn.className = 'category-btn';
     btn.dataset.target = `cat-${index}`;
@@ -279,15 +245,17 @@ function renderMenu() {
 
     if (cat.subgrupos) {
       cat.subgrupos.forEach(sub => {
+        if ((sub.items || []).filter(estaDisponible).length === 0) return;
         const subTitle = document.createElement('h3');
         subTitle.className = 'subcategory-title';
         subTitle.textContent = sub.titulo || '';
         section.appendChild(subTitle);
+        
         if (sub.imagenes?.length || sub.imagen) {
           section.appendChild(renderGallery(sub, sub.items));
         } else {
           const grid = document.createElement('div'); grid.className = 'items-grid';
-          sub.items.forEach(item => grid.appendChild(renderItemCard(item)));
+          (sub.items || []).filter(estaDisponible).forEach(item => grid.appendChild(renderItemCard(item)));
           section.appendChild(grid);
         }
       });
@@ -296,7 +264,7 @@ function renderMenu() {
         section.appendChild(renderGallery(cat, cat.items));
       } else {
         const grid = document.createElement('div'); grid.className = 'items-grid';
-        cat.items.forEach(item => grid.appendChild(renderItemCard(item)));
+        (cat.items || []).filter(estaDisponible).forEach(item => grid.appendChild(renderItemCard(item)));
         section.appendChild(grid);
       }
     }
@@ -305,7 +273,7 @@ function renderMenu() {
 
   if (categoriesNav.firstChild) categoriesNav.firstChild.classList.add('active');
 
-  // 4. SCROLL SPY (Punto 2) - Detectar qué sección está visible
+  // 3. SCROLL SPY
   if (window.scrollSpy) window.scrollSpy.disconnect();
   window.scrollSpy = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
@@ -315,7 +283,6 @@ function renderMenu() {
         if (activeBtn && !activeBtn.classList.contains('active')) {
           document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
           activeBtn.classList.add('active');
-          // Hacer scroll horizontal del botón para que se vea
           activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
         }
       }
@@ -378,7 +345,7 @@ function renderGallery(obj, items) {
 
   const list = document.createElement('div');
   list.className = 'items-grid';
-  items.forEach(item => list.appendChild(renderItemCard(item)));
+  (items || []).filter(estaDisponible).forEach(item => list.appendChild(renderItemCard(item)));
   wrapper.appendChild(list);
   return wrapper;
 }
@@ -406,21 +373,6 @@ async function iniciar() {
   if (cartClose) cartClose.onclick = cerrarCarrito;
   if (cartEnviar) cartEnviar.onclick = enviarPedido;
   if (cartOverlay) cartOverlay.onclick = (e) => { if (e.target === cartOverlay) cerrarCarrito(); };
-
-  // Botones de Filtro (Punto 3)
-  filtersBar.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.onclick = () => {
-      if (btn.classList.contains('active')) {
-        btn.classList.remove('active');
-        filtroActivo = null;
-      } else {
-        filtersBar.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        filtroActivo = btn.dataset.filter;
-      }
-      renderMenu(); // Re-renderizar con el filtro
-    };
-  });
 
   try {
     const { data, error } = await supabase.from('menu').select('data').eq('id', 'main').single();

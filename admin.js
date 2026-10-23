@@ -209,7 +209,7 @@ function createAvailToggle(item) {
 }
 
 // =====================================================
-// 🍽️ RENDER ITEM CON CHECKBOXES DE ATRIBUTOS
+// 🍽️ RENDER ITEM (Solo Destacados y Alérgenos)
 // =====================================================
 function renderItem(arr, item) {
   const row = document.createElement('div'); row.className = 'item-row'; if (item.disponible === false) row.classList.add('unavailable');
@@ -222,7 +222,6 @@ function renderItem(arr, item) {
   
   const descInput = document.createElement('textarea'); descInput.placeholder = 'Descripción (opcional)'; descInput.value = item.descripcion || ''; descInput.rows = 2; descInput.oninput = () => { item.descripcion = descInput.value; markDirty(); };
   
-  // Checkboxes de Atributos y Alérgenos
   const checksDiv = document.createElement('div');
   checksDiv.className = 'admin-checks';
 
@@ -245,14 +244,8 @@ function renderItem(arr, item) {
     checksDiv.appendChild(lbl);
   };
 
+  // Solo Destacado y Alérgenos
   addCheck('⭐ Destacado', 'destacado');
-  addCheck('🌱 Vegetariano', 'vegetariano');
-  addCheck('🌾 Sin Gluten', 'sinGluten');
-  
-  addCheck('🌶️ Picante', 'badges', true, 'picante');
-  addCheck('✨ Nuevo', 'badges', true, 'nuevo');
-  addCheck('👑 Premium', 'badges', true, 'premium');
-
   addCheck('🥛 Lácteos', 'alergenos', true, 'lacteos');
   addCheck('🦐 Marisco', 'alergenos', true, 'marisco');
   addCheck('🥜 Frutos Secos', 'alergenos', true, 'frutos-secos');
