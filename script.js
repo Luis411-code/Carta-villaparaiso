@@ -370,63 +370,62 @@ function renderItems(items) {
 }
 
 // =====================================================
-// 📸 GALERÍA INTERACTIVA (Foto se mueve a la derecha, platos salen de la izquierda)
+// 📸 GALERÍA SIMPLE (Foto arriba, platos abajo)
 // =====================================================
 function renderGallery(imagenUrl, items) {
   const visibles = (items || []).filter(estaDisponible);
 
   const wrapper = document.createElement('div');
-  wrapper.className = 'subgroup-gallery';
+  wrapper.className = 'simple-gallery';
 
-  // 1. Contenedor de las preparaciones (Izquierda)
-  const variants = document.createElement('div');
-  variants.className = 'gallery-variants';
+  // 1. La foto (Sin textos encima, sin clics)
+  if (imagenUrl) {
+    const photo = document.createElement('div');
+    photo.className = 'gallery-banner';
+    
+    const img = document.createElement('img');
+    img.src = imagenUrl;
+    img.alt = 'Foto del plato';
+    img.loading = 'lazy';
+    photo.appendChild(img);
+    wrapper.appendChild(photo);
+  }
 
-  visibles.forEach((item, index) => {
-    const card = document.createElement('div');
-    card.className = 'variant-card';
-    card.style.animationDelay = `${index * 0.1}s`; // Salen una en una
+  // 2. Los platos (Lista normal, como el resto de la carta)
+  const list = document.createElement('div');
+  list.className = 'items-grid';
 
-    const descHTML = item.descripcion ? `<p class="variant-desc">${escapeHTML(item.descripcion)}</p>` : '';
-    const alergenosHTML = item.alergenos ? `<span class="badge alergeno" style="margin-top:8px;">⚠️ ${escapeHTML(item.alergenos)}</span>` : '';
-    const addBtnHTML = mesaActual ? `<button class="btn-add-item" data-nombre="${escapeHTML(item.nombre)}" data-precio="${item.precio}">+ Añadir</button>` : '';
+  visibles.forEach(item => {
+    const el = document.createElement('article');
+    el.className = 'menu-item';
 
-    card.innerHTML = `
-      <div class="variant-header">
-        <span class="variant-name">${escapeHTML(item.nombre || '')}</span>
-        <span class="variant-price">${formatPrice(item.precio)}</span>
+    const descHTML = item.descripcion ? `<p class="item-desc">${escapeHTML(item.descripcion)}</p>` : '';
+    const addBtnHTML = mesaActual
+      ? `<button class="btn-add-item" data-nombre="${escapeHTML(item.nombre)}" data-precio="${item.precio}">+ Añadir</button>`
+      : '';
+
+    el.innerHTML = `
+      <div class="item-info">
+        <div class="item-header">
+          <span class="item-name">${escapeHTML(item.nombre || 'Sin nombre')}</span>
+          <span class="item-price">${formatPrice(item.precio)}</span>
+        </div>
+        ${descHTML}
+        ${addBtnHTML}
       </div>
-      ${descHTML}
-      <div>${alergenosHTML}</div>
-      <div style="margin-top: auto; padding-top: 10px;">${addBtnHTML}</div>
     `;
-    variants.appendChild(card);
+    list.appendChild(el);
   });
 
-  variants.querySelectorAll('.btn-add-item').forEach(btn => {
+  // Conectar botones
+  list.querySelectorAll('.btn-add-item').forEach(btn => {
     btn.onclick = (e) => {
       e.stopPropagation();
       agregarAlCarrito(btn.dataset.nombre, parseFloat(btn.dataset.precio) || 0);
     };
   });
 
-  // 2. Contenedor de la Foto (Derecha)
-  const photo = document.createElement('div');
-  photo.className = 'gallery-photo';
-  
-  const img = document.createElement('img');
-  img.src = imagenUrl; 
-  img.loading = 'lazy';
-  img.onerror = () => { photo.style.display = 'none'; wrapper.classList.add('no-photo'); };
-  photo.appendChild(img);
-
-  // 3. Lógica de la animación
-  photo.onclick = () => {
-    wrapper.classList.toggle('expanded');
-  };
-
-  // El orden importa para el CSS: platos a la izquierda, foto a la derecha
-  wrapper.append(variants, photo);
+  wrapper.appendChild(list);
   return wrapper;
 }
 

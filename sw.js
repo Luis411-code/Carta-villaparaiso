@@ -3,7 +3,7 @@
 // Estrategia: network-first para HTML/CSS/JS, cache-first para imágenes
 // =====================================================
 
-const CACHE_NAME = 'villa-paraiso-v4'; // ⬆️ Bump de versión al actualizar
+const CACHE_NAME = 'villa-paraiso-v3'; // ⬆️ Bump de versión al actualizar
 const URLS_TO_CACHE = [
   '/',
   '/index.html',
