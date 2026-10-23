@@ -1,5 +1,5 @@
 // =====================================================
-// 🍽️  MENÚ DIGITAL + COMANDA - VILLA PARAÍSO GUARDALAVACA
+// 🍽️  MENÚ DIGITAL + COMANDA - VILLA PARAÍSO
 // =====================================================
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './supabase-config.js';
@@ -9,18 +9,17 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let menuData = { categories: [] };
 let mesaActual = null;
-let carrito = []; 
+let carrito = [];
 
 const CARRITO_KEY = 'villa-paraiso-carrito';
 const MESA_KEY = 'villa-paraiso-mesa';
 
 const fallbackMenu = {
   categories: [
-    { categoria: "Entrantes", icono: "🥗", items: [{ nombre: "Croquetas de Jamón", precio: 120, descripcion: "5 unidades.", alergenos: "Gluten, Lácteos" }] }
+    { categoria: "Entrantes", icono: "🥗", items: [{ nombre: "Croquetas", precio: 120, descripcion: "5 unidades." }] }
   ]
 };
 
-// ========== ELEMENTOS DEL DOM ==========
 const categoriesNav = document.getElementById('categories');
 const menuContainer = document.getElementById('menu');
 const cartBtn = document.getElementById('cartBtn');
@@ -31,13 +30,10 @@ const cartItems = document.getElementById('cartItems');
 const cartTotal = document.getElementById('cartTotal');
 const cartEnviar = document.getElementById('cartEnviar');
 const cartNotas = document.getElementById('cartNotas');
-const mesaBanner = document.getElementById('mesaBanner');
-const mesaNumero = document.getElementById('mesaNumero');
 const toast = document.getElementById('toast');
 const toastTitle = document.getElementById('toastTitle');
 const toastMsg = document.getElementById('toastMsg');
 
-// ========== HELPERS ==========
 const formatPrice = (price) => `$${(Number(price) || 0).toFixed(2)}`;
 const escapeHTML = (text) => {
   if (!text) return '';
@@ -48,7 +44,7 @@ const escapeHTML = (text) => {
 const estaDisponible = (item) => item.disponible !== false;
 
 // =====================================================
-// 🍽️ DETECTAR MESA
+// 🍽️ DETECTAR MESA (Sin Banner visual)
 // =====================================================
 function detectarMesa() {
   const params = new URLSearchParams(window.location.search);
@@ -57,21 +53,18 @@ function detectarMesa() {
   if (mesa && mesa.trim()) {
     mesaActual = mesa.trim();
     localStorage.setItem(MESA_KEY, mesaActual);
-    mesaNumero.textContent = mesaActual;
-    mesaBanner.classList.remove('hidden');
-    document.body.classList.add('has-mesa');
     cartBtn.classList.remove('hidden');
+    console.log(`✅ Mesa detectada: ${mesaActual}`);
   } else {
     mesaActual = null;
     localStorage.removeItem(MESA_KEY);
-    mesaBanner.classList.add('hidden');
     cartBtn.classList.add('hidden');
-    document.body.classList.remove('has-mesa');
+    console.log('ℹ️ Sin mesa asignada — modo solo consulta');
   }
 }
 
 // =====================================================
-// 🛒 COMANDA
+// 🛒 COMANDA — Persistencia
 // =====================================================
 function cargarCarrito() {
   try {
@@ -98,8 +91,8 @@ function contarItems() { return carrito.reduce((sum, item) => sum + item.cantida
 
 function agregarAlCarrito(nombre, precio) {
   const existente = carrito.find(i => i.nombre === nombre);
-  if (existente) existente.cantidad += 1;
-  else carrito.push({ nombre, precio: Number(precio) || 0, cantidad: 1 });
+  if (existente) { existente.cantidad += 1; } 
+  else { carrito.push({ nombre, precio: Number(precio) || 0, cantidad: 1 }); }
   guardarCarrito();
   mostrarToast('✅ Añadido', `${nombre} agregado a tu comanda`, false);
 }
@@ -108,7 +101,7 @@ function cambiarCantidad(nombre, delta) {
   const item = carrito.find(i => i.nombre === nombre);
   if (!item) return;
   item.cantidad += delta;
-  if (item.cantidad <= 0) carrito = carrito.filter(i => i.nombre !== nombre);
+  if (item.cantidad <= 0) { carrito = carrito.filter(i => i.nombre !== nombre); }
   guardarCarrito();
 }
 
@@ -118,25 +111,14 @@ function eliminarDelCarrito(nombre) {
 }
 
 // =====================================================
-// 🎨 CABECERA AUTOMÁTICA COMANDA
-// =====================================================
-function actualizarCabeceraComanda() {
-  const comandaMesa = document.getElementById('comandaMesa');
-  const comandaFecha = document.getElementById('comandaFecha');
-  if (comandaMesa) comandaMesa.textContent = mesaActual ? mesaActual : 'S/N';
-  if (comandaFecha) {
-    const hoy = new Date();
-    comandaFecha.textContent = `${hoy.getDate().toString().padStart(2, '0')}/${(hoy.getMonth()+1).toString().padStart(2, '0')}/${hoy.getFullYear()}`;
-  }
-}
-
-// =====================================================
-// 🎨 UI COMANDA
+// 🎨 COMANDA — Actualizar UI
 // =====================================================
 function actualizarUI() {
   const total = contarItems();
-  if (total > 0) { cartCount.textContent = total; cartCount.classList.remove('hidden'); } 
-  else { cartCount.classList.add('hidden'); }
+  if (total > 0) {
+    cartCount.textContent = total;
+    cartCount.classList.remove('hidden');
+  } else { cartCount.classList.add('hidden'); }
 
   if (carrito.length === 0) {
     cartItems.innerHTML = `<div class="cart-empty"><span class="cart-empty-icon">📋</span>Tu comanda está vacía</div>`;
@@ -144,14 +126,14 @@ function actualizarUI() {
   } else {
     cartItems.innerHTML = carrito.map(item => `
       <div class="cart-item">
+        <div class="cart-item-info">
+          <div class="cart-item-nombre">${escapeHTML(item.nombre)}</div>
+          <div class="cart-item-precio">${formatPrice(item.precio)} c/u</div>
+        </div>
         <div class="cart-item-qty">
           <button class="cart-qty-btn menos" data-nombre="${escapeHTML(item.nombre)}" data-delta="-1">−</button>
           <span class="cart-item-cantidad">${item.cantidad}</span>
           <button class="cart-qty-btn mas" data-nombre="${escapeHTML(item.nombre)}" data-delta="1">+</button>
-        </div>
-        <div class="cart-item-info">
-          <div class="cart-item-nombre">${escapeHTML(item.nombre)}</div>
-          <div class="cart-item-precio">${formatPrice(item.precio)} c/u</div>
         </div>
         <div class="cart-item-subtotal">${formatPrice(item.precio * item.cantidad)}</div>
         <button class="cart-item-eliminar" data-nombre="${escapeHTML(item.nombre)}" title="Eliminar">🗑️</button>
@@ -162,8 +144,7 @@ function actualizarUI() {
       btn.onclick = () => {
         const nombre = btn.dataset.nombre;
         const delta = parseInt(btn.dataset.delta, 10);
-        const itemEl = btn.closest('.cart-item');
-        const counter = itemEl?.querySelector('.cart-item-cantidad');
+        const counter = btn.closest('.cart-item')?.querySelector('.cart-item-cantidad');
         if (counter) { counter.classList.add('bump'); setTimeout(() => counter.classList.remove('bump'), 350); }
         cambiarCantidad(nombre, delta);
       };
@@ -171,7 +152,7 @@ function actualizarUI() {
 
     cartItems.querySelectorAll('.cart-item-eliminar').forEach(btn => {
       btn.onclick = () => {
-        if (confirm(`¿Eliminar "${btn.dataset.nombre}" de la comanda?`)) eliminarDelCarrito(btn.dataset.nombre);
+        if (confirm(`¿Eliminar "${btn.dataset.nombre}" de la comanda?`)) { eliminarDelCarrito(btn.dataset.nombre); }
       };
     });
     cartEnviar.disabled = false;
@@ -180,8 +161,7 @@ function actualizarUI() {
   cartTotal.textContent = formatPrice(calcularTotal());
 
   document.querySelectorAll('.btn-add-item').forEach(btn => {
-    const nombre = btn.dataset.nombre;
-    const enCarrito = carrito.some(i => i.nombre === nombre);
+    const enCarrito = carrito.some(i => i.nombre === btn.dataset.nombre);
     if (enCarrito) { btn.classList.add('added'); btn.textContent = '✓ En la comanda'; } 
     else { btn.classList.remove('added'); btn.textContent = '+ Añadir'; }
   });
@@ -197,15 +177,15 @@ function mostrarToast(titulo, mensaje, esError = false) {
   toast.classList.toggle('toast-error', esError);
   toast.classList.remove('hidden');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toast.classList.add('hidden'), 3500);
+  toastTimer = setTimeout(() => { toast.classList.add('hidden'); }, 3500);
 }
 
 // =====================================================
 // 📤 ENVIAR COMANDA
 // =====================================================
 async function enviarPedido() {
-  if (!mesaActual) { mostrarToast('❌ Error', 'No se detectó la mesa.', true); return; }
-  if (carrito.length === 0) { mostrarToast('⚠️ Vacía', 'Añade platos antes de enviar', true); return; }
+  if (!mesaActual) return mostrarToast('❌ Error', 'No se detectó la mesa. Escanea el QR.', true);
+  if (carrito.length === 0) return mostrarToast('⚠️ Comanda vacía', 'Añade platos antes de enviar', true);
 
   cartEnviar.disabled = true;
   cartEnviar.classList.add('enviando');
@@ -213,9 +193,8 @@ async function enviarPedido() {
 
   try {
     const { error } = await supabase.from('pedidos').insert({
-      mesa: mesaActual, items: carrito, total: calcularTotal(),
-      notas: cartNotas.value.trim(), estado: 'pendiente'
-    });
+      mesa: mesaActual, items: carrito, total: calcularTotal(), notas: cartNotas.value.trim(), estado: 'pendiente'
+    }).select().single();
 
     if (error) throw error;
 
@@ -223,23 +202,21 @@ async function enviarPedido() {
     mostrarToast('🎉 ¡Comanda enviada!', `Mesa ${mesaActual} · Tu mesero la recibirá en un momento`, false);
 
     setTimeout(() => {
-      limpiarCarrito(); cerrarCarrito();
+      limpiarCarrito();
+      cerrarCarrito();
       cartEnviar.classList.remove('enviando');
       cartEnviar.textContent = '✅ Enviar comanda al mesero';
       cartEnviar.disabled = false;
     }, 1200);
   } catch (err) {
-    console.error(err);
+    console.error('❌ Error al enviar comanda:', err);
     cartEnviar.disabled = false;
     cartEnviar.classList.remove('enviando');
     cartEnviar.textContent = '✅ Enviar comanda al mesero';
-    mostrarToast('❌ Error', 'Revisa tu conexión e inténtalo de nuevo', true);
+    mostrarToast('❌ No se pudo enviar', 'Revisa tu conexión', true);
   }
 }
 
-// =====================================================
-// 🎨 RENDERIZAR
-// =====================================================
 function renderIconHTML(obj, size = '1.1em') {
   if (obj.iconoImg) return `<img src="${escapeHTML(obj.iconoImg)}" style="width:${size};height:${size};object-fit:contain;vertical-align:-0.2em;margin-right:6px;display:inline-block;">`;
   if (obj.icono) return `<span style="margin-right:4px;">${escapeHTML(obj.icono)}</span>`;
@@ -249,22 +226,33 @@ function renderIconHTML(obj, size = '1.1em') {
 function applySiteConfig(site) {
   if (!site) return;
   const setText = (id, val) => { const el = document.getElementById(id); if (el && val) el.textContent = val; };
-  setText('heroNombre', site.nombre); setText('heroSubtitulo', site.subtitulo);
-  setText('heroTagline', site.tagline); setText('heroHoras', site.horas);
+  setText('heroNombre', site.nombre); setText('heroSubtitulo', site.subtitulo); setText('heroTagline', site.tagline); setText('heroHoras', site.horas);
   setText('footerSub', site.footerSub); setText('footerCopy', site.footerCopy);
-
+  
   const footerMsg = document.getElementById('footerMensaje');
   if (footerMsg && site.footerMensaje) {
     const textoLimpio = String(site.footerMensaje).replace(/<[^>]*>/g, '').trim();
     const nombre = site.nombre || '';
     if (nombre && textoLimpio.includes(nombre)) {
-      footerMsg.innerHTML = textoLimpio.replace(nombre, `<strong>${nombre}</strong>`);
+      const partes = textoLimpio.split(nombre);
+      footerMsg.innerHTML = '';
+      partes.forEach((parte, i) => {
+        footerMsg.appendChild(document.createTextNode(parte));
+        if (i < partes.length - 1) {
+          const strong = document.createElement('strong');
+          strong.textContent = nombre;
+          footerMsg.appendChild(strong);
+        }
+      });
     } else { footerMsg.textContent = textoLimpio; }
   }
   if (site.logoUrl) { const logo = document.getElementById('heroLogo'); if (logo) logo.src = site.logoUrl; }
-  if (site.nombre) document.title = `${site.nombre} · Carta`;
+  if (site.nombre) { document.title = `${site.nombre} · Carta`; }
 }
 
+// =====================================================
+// 📥 CARGAR MENÚ
+// =====================================================
 async function loadFromSupabase() {
   try {
     const { data, error } = await supabase.from('menu').select('data').eq('id', 'main').single();
@@ -272,18 +260,24 @@ async function loadFromSupabase() {
     if (data?.data?.categories?.length) menuData = data.data;
     if (data?.data?.site) applySiteConfig(data.data.site);
   } catch (err) {
-    console.warn('⚠️ Usando respaldo:', err.message); menuData = fallbackMenu;
+    console.warn('⚠️ Error Supabase:', err.message);
+    menuData = fallbackMenu;
   }
-  renderMenu(); actualizarUI();
+  renderMenu();
+  actualizarUI();
 }
 
+// =====================================================
+// 🎨 RENDERIZAR MENÚ
+// =====================================================
 function renderMenu() {
-  categoriesNav.innerHTML = ''; menuContainer.innerHTML = '';
+  categoriesNav.innerHTML = '';
+  menuContainer.innerHTML = '';
 
   menuData.categories.forEach((cat, index) => {
-    let tieneDisponibles = cat.subgrupos?.length > 0 
-      ? cat.subgrupos.some(sub => (sub.items || []).some(estaDisponible))
-      : (cat.items || []).some(estaDisponible);
+    let tieneDisponibles = false;
+    if (cat.subgrupos?.length > 0) { tieneDisponibles = cat.subgrupos.some(sub => (sub.items || []).some(estaDisponible)); } 
+    else { tieneDisponibles = (cat.items || []).some(estaDisponible); }
     if (!tieneDisponibles) return;
 
     const btn = document.createElement('button');
@@ -301,13 +295,14 @@ function renderMenu() {
   if (primerBtn) primerBtn.classList.add('active');
 
   menuData.categories.forEach((cat, index) => {
-    let tieneDisponibles = cat.subgrupos?.length > 0 
-      ? cat.subgrupos.some(sub => (sub.items || []).some(estaDisponible))
-      : (cat.items || []).some(estaDisponible);
+    let tieneDisponibles = false;
+    if (cat.subgrupos?.length > 0) { tieneDisponibles = cat.subgrupos.some(sub => (sub.items || []).some(estaDisponible)); } 
+    else { tieneDisponibles = (cat.items || []).some(estaDisponible); }
     if (!tieneDisponibles) return;
 
     const section = document.createElement('section');
-    section.className = 'category-section'; section.id = `cat-${index}`;
+    section.className = 'category-section';
+    section.id = `cat-${index}`;
 
     const title = document.createElement('h2');
     title.className = 'category-title';
@@ -318,31 +313,40 @@ function renderMenu() {
       cat.subgrupos.forEach(sub => {
         const visibles = (sub.items || []).filter(estaDisponible);
         if (visibles.length === 0) return;
+
         const subTitle = document.createElement('h3');
-        subTitle.className = 'subcategory-title'; subTitle.textContent = sub.titulo || '';
+        subTitle.className = 'subcategory-title';
+        subTitle.textContent = sub.titulo || '';
         section.appendChild(subTitle);
-        section.appendChild(sub.imagen ? renderGallery(sub.imagen, sub.items) : renderItems(sub.items || []));
+
+        if (sub.imagenes?.length > 0 || sub.imagen) {
+          section.appendChild(renderGallery(sub, sub.items));
+        } else {
+          section.appendChild(renderItems(sub.items || []));
+        }
       });
     } else {
-      section.appendChild(cat.imagen ? renderGallery(cat.imagen, cat.items) : renderItems(cat.items || []));
+      if (cat.imagenes?.length > 0 || cat.imagen) { section.appendChild(renderGallery(cat, cat.items)); } 
+      else { section.appendChild(renderItems(cat.items || [])); }
     }
     menuContainer.appendChild(section);
   });
+
+  if (menuContainer.children.length === 0) {
+    menuContainer.innerHTML = `<div style="text-align:center;padding:60px 20px;color:#999;"><p style="font-family:Cormorant Garamond,serif;font-size:1.3rem;font-style:italic;">La carta se está actualizando.</p></div>`;
+  }
 }
 
 function renderItems(items) {
   const grid = document.createElement('div');
   grid.className = 'items-grid';
   const visibles = (items || []).filter(estaDisponible);
-
   if (visibles.length === 0) { grid.innerHTML = `<p style="color:#999;font-style:italic;padding:14px;text-align:center;">No hay platos disponibles.</p>`; return grid; }
 
   visibles.forEach(item => {
     const el = document.createElement('article');
     el.className = 'menu-item';
-
     const badgeHTML = item.badge ? `<span class="badge ${item.tipo || ''}">${item.tipo === 'premium' ? '⭐' : item.tipo === 'veg' ? '🌱' : '•'} ${escapeHTML(item.badge)}</span>` : '';
-    const alergenosHTML = item.alergenos ? `<span class="badge alergeno">⚠️ Contiene: ${escapeHTML(item.alergenos)}</span>` : '';
     const descHTML = item.descripcion ? `<p class="item-desc">${escapeHTML(item.descripcion)}</p>` : '';
     const addBtnHTML = mesaActual ? `<button class="btn-add-item" data-nombre="${escapeHTML(item.nombre)}" data-precio="${item.precio}">+ Añadir</button>` : '';
 
@@ -353,7 +357,7 @@ function renderItems(items) {
           <span class="item-price">${formatPrice(item.precio)}</span>
         </div>
         ${descHTML}
-        <div>${alergenosHTML} ${badgeHTML}</div>
+        ${badgeHTML}
         ${addBtnHTML}
       </div>
     `;
@@ -361,48 +365,59 @@ function renderItems(items) {
   });
 
   grid.querySelectorAll('.btn-add-item').forEach(btn => {
-    btn.onclick = (e) => {
-      e.stopPropagation();
-      agregarAlCarrito(btn.dataset.nombre, parseFloat(btn.dataset.precio) || 0);
-    };
+    btn.onclick = (e) => { e.stopPropagation(); agregarAlCarrito(btn.dataset.nombre, parseFloat(btn.dataset.precio) || 0); };
   });
   return grid;
 }
 
 // =====================================================
-// 📸 GALERÍA SIMPLE (Foto arriba, platos abajo)
+// 📸 CARRUSEL AUTOMÁTICO (Fotos)
 // =====================================================
-function renderGallery(imagenUrl, items) {
-  const visibles = (items || []).filter(estaDisponible);
+function renderGallery(obj, items) {
+  let urls = [];
+  if (obj.imagenes && Array.isArray(obj.imagenes) && obj.imagenes.length > 0) { urls = obj.imagenes; } 
+  else if (obj.imagen) { urls = [obj.imagen]; }
 
+  const visibles = (items || []).filter(estaDisponible);
   const wrapper = document.createElement('div');
   wrapper.className = 'simple-gallery';
 
-  // 1. La foto (Sin textos encima, sin clics)
-  if (imagenUrl) {
-    const photo = document.createElement('div');
-    photo.className = 'gallery-banner';
-    
-    const img = document.createElement('img');
-    img.src = imagenUrl;
-    img.alt = 'Foto del plato';
-    img.loading = 'lazy';
-    photo.appendChild(img);
-    wrapper.appendChild(photo);
+  if (urls.length > 0) {
+    const carousel = document.createElement('div');
+    carousel.className = 'gallery-carousel';
+
+    urls.forEach((url, index) => {
+      const img = document.createElement('img');
+      img.src = url;
+      img.alt = 'Foto del plato';
+      img.loading = 'lazy';
+      if (index === 0) img.classList.add('active');
+      carousel.appendChild(img);
+    });
+
+    wrapper.appendChild(carousel);
+
+    // Rotar cada 5 segundos si hay más de una foto
+    if (urls.length > 1) {
+      let currentIndex = 0;
+      const images = carousel.querySelectorAll('img');
+      setInterval(() => {
+        if(!document.body.contains(carousel)) return; // Detener si se sale de la página
+        images[currentIndex].classList.remove('active');
+        currentIndex = (currentIndex + 1) % images.length;
+        images[currentIndex].classList.add('active');
+      }, 5000);
+    }
   }
 
-  // 2. Los platos (Lista normal, como el resto de la carta)
   const list = document.createElement('div');
   list.className = 'items-grid';
 
   visibles.forEach(item => {
     const el = document.createElement('article');
     el.className = 'menu-item';
-
     const descHTML = item.descripcion ? `<p class="item-desc">${escapeHTML(item.descripcion)}</p>` : '';
-    const addBtnHTML = mesaActual
-      ? `<button class="btn-add-item" data-nombre="${escapeHTML(item.nombre)}" data-precio="${item.precio}">+ Añadir</button>`
-      : '';
+    const addBtnHTML = mesaActual ? `<button class="btn-add-item" data-nombre="${escapeHTML(item.nombre)}" data-precio="${item.precio}">+ Añadir</button>` : '';
 
     el.innerHTML = `
       <div class="item-info">
@@ -417,23 +432,21 @@ function renderGallery(imagenUrl, items) {
     list.appendChild(el);
   });
 
-  // Conectar botones
   list.querySelectorAll('.btn-add-item').forEach(btn => {
-    btn.onclick = (e) => {
-      e.stopPropagation();
-      agregarAlCarrito(btn.dataset.nombre, parseFloat(btn.dataset.precio) || 0);
-    };
+    btn.onclick = (e) => { e.stopPropagation(); agregarAlCarrito(btn.dataset.nombre, parseFloat(btn.dataset.precio) || 0); };
   });
 
   wrapper.appendChild(list);
   return wrapper;
 }
 
-function abrirCarrito() { actualizarCabeceraComanda(); cartOverlay.classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
+function abrirCarrito() { cartOverlay.classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
 function cerrarCarrito() { cartOverlay.classList.add('hidden'); document.body.style.overflow = ''; }
 
 function iniciar() {
-  detectarMesa(); cargarCarrito(); actualizarUI();
+  detectarMesa();
+  cargarCarrito();
+  actualizarUI();
   cartBtn.onclick = abrirCarrito;
   cartClose.onclick = cerrarCarrito;
   cartEnviar.onclick = enviarPedido;

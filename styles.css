@@ -1,18 +1,16 @@
 /* =====================================================
-   🖤  VILLA PARAÍSO — Carta del Cliente (Completo)
-   Paleta: Rojo Teja, Verde Selva, Ocre, Turquesa
+   🖤  VILLA PARAÍSO — Carta del Cliente
+   Paleta: Rojo Teja, Verde Selva, Ocre
    ===================================================== */
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
-  /* Paleta Villa Paraíso */
   --rojo-teja: #C62828;
   --verde-selva: #2E7D32;
   --ocre: #D4A373;
   --turquesa: #00A8CC;
 
-  /* Mapeo de variables */
   --gold: var(--ocre);
   --gold-light: #E8CDA8;
   --gold-dark: #AE7E55;
@@ -22,7 +20,6 @@
   --dark-2: #1B5E20;
   --accent: var(--turquesa);
 
-  /* Fondos y textos */
   --black: #0a120d;
   --black-2: #142118;
   --charcoal: #1f3024;
@@ -33,7 +30,6 @@
   --gray: #7a7a7a;
   --border: #e5e5e5;
 
-  /* Tipografías */
   --font-display: 'Cinzel', Georgia, serif;
   --font-body: 'Cormorant Garamond', Georgia, serif;
   --font-ui: 'Poppins', -apple-system, sans-serif;
@@ -60,19 +56,6 @@ body::before {
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cg fill='none' stroke='%23D4A373' stroke-width='0.6' opacity='0.08'%3E%3Cpath d='M80 20 C60 40 60 60 80 80 C100 60 100 40 80 20 Z'/%3E%3Cpath d='M80 140 C60 120 60 100 80 80 C100 100 100 120 80 140 Z'/%3E%3Cpath d='M20 80 C40 60 60 60 80 80 C60 100 40 100 20 80 Z'/%3E%3Cpath d='M140 80 C120 60 100 60 80 80 C100 100 120 100 140 80 Z'/%3E%3Ccircle cx='80' cy='80' r='4'/%3E%3Ccircle cx='80' cy='80' r='10'/%3E%3C/g%3E%3C/svg%3E");
   background-size: auto, auto, 160px 160px;
 }
-
-/* ============ BANNER DE MESA ============ */
-.mesa-banner {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
-  background: linear-gradient(135deg, var(--dark), var(--dark-2));
-  border-bottom: 2px solid var(--gold);
-  color: var(--cream); padding: 10px 16px;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  font-size: clamp(0.75rem, 2vw, 0.9rem); letter-spacing: 1px;
-}
-.mesa-banner.hidden { display: none !important; }
-.mesa-banner strong { color: var(--gold); font-weight: 700; font-size: clamp(0.85rem, 2.5vw, 1rem); }
-body.has-mesa .top-ornament { margin-top: 42px; }
 
 /* ============ ORNAMENTO ============ */
 .top-ornament {
@@ -117,7 +100,6 @@ body.has-mesa .top-ornament { margin-top: 42px; }
   padding: 16px 20px; display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; z-index: 100;
   border-bottom: 1px solid rgba(212,163,115,0.25); box-shadow: 0 4px 20px rgba(0,0,0,0.6);
 }
-body.has-mesa .categories { top: 42px; }
 .categories::-webkit-scrollbar { display: none; }
 
 .category-btn {
@@ -143,7 +125,6 @@ body.has-mesa .categories { top: 42px; }
 
 /* ============ SECCIONES Y PLATOS ============ */
 .category-section { margin-bottom: 50px; scroll-margin-top: 90px; }
-body.has-mesa .category-section { scroll-margin-top: 130px; }
 .category-section:last-child { margin-bottom: 10px; }
 
 .category-title {
@@ -164,7 +145,6 @@ body.has-mesa .category-section { scroll-margin-top: 130px; }
 .items-grid { display: flex; flex-direction: column; gap: 16px; margin-top: 20px; }
 .menu-item { padding: 14px 4px; border-bottom: 1px dotted rgba(212,163,115,0.35); display: flex; gap: 14px; align-items: flex-start; transition: all 0.3s ease; animation: fadeIn 0.5s ease; position: relative; }
 .menu-item:last-child { border-bottom: none; }
-.menu-item:hover { padding-left: 10px; border-bottom-color: var(--gold); }
 
 .item-info { flex: 1; }
 .item-header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 6px; flex-wrap: wrap; }
@@ -190,33 +170,35 @@ body.has-mesa .category-section { scroll-margin-top: 130px; }
 .footer .small { font-family: var(--font-ui); font-size: 0.7rem; letter-spacing: 2px; text-transform: uppercase; margin-top: 8px; opacity: 0.6; }
 
 /* =====================================================
-   📸 GALERÍA SIMPLE (Foto + Lista limpia)
+   📸 CARRUSEL DE FOTOS AUTOMÁTICO
    ===================================================== */
 .simple-gallery {
   margin: 20px 0;
 }
 
-/* La foto grande, sin nada encima */
-.gallery-banner {
+.gallery-carousel {
   width: 100%;
-  aspect-ratio: 16 / 9; /* Formato panorámico elegante */
+  aspect-ratio: 16 / 9;
+  position: relative;
   border-radius: 12px;
   overflow: hidden;
   margin-bottom: 24px;
   box-shadow: 0 4px 15px rgba(0,0,0,0.1);
   border: 2px solid rgba(212, 163, 115, 0.4);
+  background: #1a1a1a;
 }
 
-.gallery-banner img {
-  width: 100%;
-  height: 100%;
+.gallery-carousel img {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
   object-fit: cover;
-  display: block;
-  transition: transform 0.4s ease;
+  opacity: 0;
+  transition: opacity 1s ease-in-out;
 }
 
-.gallery-banner:hover img {
-  transform: scale(1.03);
+.gallery-carousel img.active {
+  opacity: 1;
 }
 
 /* ============ COMANDA (CARRITO) ============ */
@@ -240,7 +222,6 @@ body.has-mesa .category-section { scroll-margin-top: 130px; }
 .cart-panel { position: absolute; bottom: 0; left: 0; right: 0; max-height: 88vh; background: var(--cream); border-top: 4px solid var(--primary); border-radius: 24px 24px 0 0; display: flex; flex-direction: column; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.65, 0, 0.35, 1); box-shadow: 0 -10px 40px rgba(0,0,0,0.5); max-width: 100%; margin: 0 auto; }
 .cart-overlay:not(.hidden) .cart-panel { transform: translateY(0); }
 
-/* En PC, la comanda sale de la derecha */
 @media (min-width: 768px) {
   .cart-panel { top: 0; right: 0; bottom: 0; left: auto; width: 420px; max-height: 100vh; border-radius: 24px 0 0 24px; border-top: none; border-left: 4px solid var(--primary); transform: translateX(100%); }
   .cart-overlay:not(.hidden) .cart-panel { transform: translateX(0); }
