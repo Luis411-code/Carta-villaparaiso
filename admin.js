@@ -39,19 +39,25 @@ logoutBtn.addEventListener('click', async () => {
 
 supabase.auth.getSession().then(({ data: { session } }) => {
   if (session) {
-    loginScreen.classList.add('hidden'); adminScreen.classList.remove('hidden');
-    userEmail.textContent = session.user.email; loadMenu();
+    loginScreen.classList.add('hidden');
+    adminScreen.classList.remove('hidden');
+    userEmail.textContent = session.user.email;
+    loadMenu();
   } else {
-    loginScreen.classList.remove('hidden'); adminScreen.classList.add('hidden');
+    loginScreen.classList.remove('hidden');
+    adminScreen.classList.add('hidden');
   }
 });
 
 supabase.auth.onAuthStateChange((event, session) => {
   if (session) {
-    loginScreen.classList.add('hidden'); adminScreen.classList.remove('hidden');
-    userEmail.textContent = session.user.email; loadMenu();
+    loginScreen.classList.add('hidden');
+    adminScreen.classList.remove('hidden');
+    userEmail.textContent = session.user.email;
+    loadMenu();
   } else {
-    loginScreen.classList.remove('hidden'); adminScreen.classList.add('hidden');
+    loginScreen.classList.remove('hidden');
+    adminScreen.classList.add('hidden');
   }
 });
 
@@ -135,9 +141,16 @@ function render() {
     
     const iconInput = document.createElement('input'); iconInput.className = 'cat-icon-input'; iconInput.value = cat.icono || '🍽️'; iconInput.maxLength = 3; iconInput.oninput = () => { cat.icono = iconInput.value; markDirty(); };
     const nameInput = document.createElement('input'); nameInput.className = 'cat-name-input'; nameInput.value = cat.categoria || ''; nameInput.placeholder = 'Nombre de la categoría'; nameInput.oninput = () => { cat.categoria = nameInput.value; markDirty(); };
+    
+    // ⭐ Checkbox de Destacado
+    const destacadoLabel = document.createElement('label');
+    destacadoLabel.style.cssText = 'display:flex; align-items:center; gap:5px; cursor:pointer; font-weight:bold; color:var(--primary); font-size:0.85rem; background:#fff3cd; padding:8px 12px; border-radius:8px; border:1px solid #ffe69c; white-space:nowrap;';
+    destacadoLabel.innerHTML = `<input type="checkbox" ${cat.destacado ? 'checked' : ''} style="width:16px; height:16px; cursor:pointer;"> ⭐ Destacado`;
+    destacadoLabel.querySelector('input').onchange = (e) => { cat.destacado = e.target.checked; markDirty(); };
+
     const delCat = document.createElement('button'); delCat.className = 'btn-danger btn-small'; delCat.textContent = '🗑️ Eliminar'; delCat.onclick = () => { if (confirm(`¿Eliminar la categoría "${cat.categoria}"?`)) { menuData.categories = menuData.categories.filter(c => c.id !== cat.id); markDirty(); render(); } };
     
-    head.append(iconInput, nameInput, delCat); card.appendChild(head);
+    head.append(iconInput, nameInput, destacadoLabel, delCat); card.appendChild(head);
 
     const body = document.createElement('div'); body.className = 'category-body';
 
@@ -208,50 +221,15 @@ function createAvailToggle(item) {
   return wrap;
 }
 
-// =====================================================
-// 🍽️ RENDER ITEM (Solo Destacados y Alérgenos)
-// =====================================================
 function renderItem(arr, item) {
   const row = document.createElement('div'); row.className = 'item-row'; if (item.disponible === false) row.classList.add('unavailable');
   const toggle = createAvailToggle(item);
-  
   const nameInput = document.createElement('input'); nameInput.placeholder = 'Nombre del plato'; nameInput.value = item.nombre || ''; nameInput.oninput = () => { item.nombre = nameInput.value; markDirty(); };
   const priceInput = document.createElement('input'); priceInput.className = 'item-price-input'; priceInput.type = 'number'; priceInput.step = '0.01'; priceInput.placeholder = 'Precio'; priceInput.value = item.precio ?? 0; priceInput.oninput = () => { item.precio = parseFloat(priceInput.value) || 0; markDirty(); };
   const actions = document.createElement('div'); actions.className = 'item-actions';
   const delBtn = document.createElement('button'); delBtn.className = 'btn-danger btn-small'; delBtn.textContent = '🗑️'; delBtn.onclick = () => { if (confirm(`¿Eliminar "${item.nombre}"?`)) { const idx = arr.indexOf(item); if (idx > -1) arr.splice(idx, 1); markDirty(); render(); } }; actions.appendChild(delBtn);
-  
   const descInput = document.createElement('textarea'); descInput.placeholder = 'Descripción (opcional)'; descInput.value = item.descripcion || ''; descInput.rows = 2; descInput.oninput = () => { item.descripcion = descInput.value; markDirty(); };
-  
-  const checksDiv = document.createElement('div');
-  checksDiv.className = 'admin-checks';
-
-  const addCheck = (text, key, isArray = false, value = '') => {
-    const lbl = document.createElement('label');
-    const chk = document.createElement('input'); chk.type = 'checkbox';
-    if (isArray) {
-      chk.checked = item[key] && item[key].includes(value);
-      chk.onchange = () => {
-        if (!item[key]) item[key] = [];
-        if (chk.checked) item[key].push(value);
-        else item[key] = item[key].filter(v => v !== value);
-        markDirty();
-      };
-    } else {
-      chk.checked = !!item[key];
-      chk.onchange = () => { item[key] = chk.checked; markDirty(); };
-    }
-    lbl.appendChild(chk); lbl.appendChild(document.createTextNode(text));
-    checksDiv.appendChild(lbl);
-  };
-
-  // Solo Destacado y Alérgenos
-  addCheck('⭐ Destacado', 'destacado');
-  addCheck('🥛 Lácteos', 'alergenos', true, 'lacteos');
-  addCheck('🦐 Marisco', 'alergenos', true, 'marisco');
-  addCheck('🥜 Frutos Secos', 'alergenos', true, 'frutos-secos');
-  addCheck('🥚 Huevo', 'alergenos', true, 'huevo');
-
-  row.append(toggle, nameInput, priceInput, actions, descInput, checksDiv);
+  row.append(toggle, nameInput, priceInput, actions, descInput);
   return row;
 }
 

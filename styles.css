@@ -1,6 +1,5 @@
 /* =====================================================
-   🖤  VILLA PARAÍSO — Carta del Cliente
-   Paleta: Rojo Teja, Verde Selva, Ocre
+   🖤  VILLA PARAÍSO — Carta del Cliente (Completo)
    ===================================================== */
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -15,6 +14,7 @@
   --gold-light: #E8CDA8;
   --gold-dark: #AE7E55;
   --primary: var(--rojo-teja);
+  --primary-light: #ef9a9a;
   --primary-dark: #9b1c1c;
   --dark: var(--verde-selva);
   --dark-2: #1B5E20;
@@ -22,9 +22,7 @@
 
   --black: #0a120d;
   --black-2: #142118;
-  --charcoal: #1f3024;
   --cream: #fdfaf5;
-  --cream-2: #f4ece1;
   --text: #2a2a2a;
   --text-light: #6b6b6b;
   --gray: #7a7a7a;
@@ -46,7 +44,6 @@ body {
   position: relative;
 }
 
-/* ============ FONDO DAMASCO ============ */
 body::before {
   content: ""; position: fixed; inset: 0; z-index: -1;
   background-color: var(--black);
@@ -57,13 +54,10 @@ body::before {
   background-size: auto, auto, 160px 160px;
 }
 
-/* ============ ORNAMENTO ============ */
 .top-ornament {
   height: 6px; background: linear-gradient(90deg, transparent 0%, var(--gold-dark) 15%, var(--gold) 50%, var(--gold-dark) 85%, transparent 100%);
-  box-shadow: 0 0 20px rgba(212,163,115,0.4);
 }
 
-/* ============ HERO ============ */
 .hero { padding: 55px 20px 60px; text-align: center; position: relative; }
 .hero-content { position: relative; z-index: 1; }
 
@@ -94,7 +88,6 @@ body::before {
 .info-badges { margin-top: 30px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 .info-badges span { background: rgba(212,163,115,0.08); backdrop-filter: blur(10px); padding: 9px 18px; border-radius: 30px; font-size: clamp(0.7rem, 2vw, 0.85rem); color: var(--gold-light); border: 1px solid rgba(212,163,115,0.3); letter-spacing: 1px; }
 
-/* ============ CATEGORÍAS ============ */
 .categories {
   position: sticky; top: 0; background: rgba(10,18,13,0.95); backdrop-filter: blur(15px);
   padding: 16px 20px; display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; z-index: 100;
@@ -112,7 +105,6 @@ body::before {
 .category-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600; box-shadow: 0 4px 16px rgba(198,40,40,0.4); }
 .category-btn img { filter: drop-shadow(0 0 4px rgba(212,163,115,0.4)); }
 
-/* ============ CONTENEDOR DEL MENÚ ============ */
 .menu-container {
   background: var(--cream); margin: 30px auto 100px; border-radius: 6px;
   padding: 40px clamp(16px, 5vw, 40px);
@@ -123,7 +115,6 @@ body::before {
 .menu-container::before { top: 12px; left: 16px; }
 .menu-container::after { top: 12px; right: 16px; }
 
-/* ============ SECCIONES Y PLATOS ============ */
 .category-section { margin-bottom: 50px; scroll-margin-top: 90px; }
 .category-section:last-child { margin-bottom: 10px; }
 
@@ -135,6 +126,31 @@ body::before {
 .category-title img { filter: drop-shadow(0 0 6px rgba(212,163,115,0.3)); }
 .category-title::after { content: "❧ ✦ ❧"; display: block; color: var(--gold); font-size: 0.85rem; margin-top: 10px; letter-spacing: 8px; width: 100%; font-weight: normal; }
 
+/* ⭐ Sección Destacada (Recomendados) */
+.seccion-destacada {
+  background: rgba(212, 163, 115, 0.05);
+  border: 2px dashed var(--gold);
+  border-radius: 12px;
+  padding: 20px 10px;
+  position: relative;
+}
+.seccion-destacada::before {
+  content: "Recomendado por el Chef";
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--gold);
+  color: var(--black-2);
+  padding: 4px 16px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 10px rgba(212, 163, 115, 0.3);
+}
+
 .subcategory-title {
   font-family: var(--font-ui); font-size: clamp(0.8rem, 2vw, 0.95rem); font-weight: 600; color: var(--gold-dark);
   text-transform: uppercase; letter-spacing: 3px; text-align: center; margin: 28px 0 18px;
@@ -145,6 +161,7 @@ body::before {
 .items-grid { display: flex; flex-direction: column; gap: 16px; margin-top: 20px; }
 .menu-item { padding: 14px 4px; border-bottom: 1px dotted rgba(212,163,115,0.35); display: flex; gap: 14px; align-items: flex-start; transition: all 0.3s ease; animation: fadeIn 0.5s ease; position: relative; }
 .menu-item:last-child { border-bottom: none; }
+.menu-item:hover { padding-left: 10px; border-bottom-color: var(--gold); }
 
 .item-info { flex: 1; }
 .item-header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 6px; flex-wrap: wrap; }
@@ -153,16 +170,11 @@ body::before {
 .item-price::before { content: "—"; margin-right: 8px; color: rgba(212,163,115,0.5); font-weight: normal; }
 .item-desc { font-family: var(--font-body); font-size: clamp(0.9rem, 2vw, 1rem); color: var(--text-light); line-height: 1.5; font-style: italic; }
 
-.badge { display: inline-block; margin-top: 8px; font-family: var(--font-ui); font-size: 0.65rem; padding: 3px 11px; border-radius: 20px; background: rgba(212,163,115,0.12); color: var(--gold-dark); font-weight: 600; letter-spacing: 1px; text-transform: uppercase; border: 1px solid rgba(212,163,115,0.35); }
-.badge.premium { background: var(--dark); color: var(--gold); border-color: var(--gold); }
-.badge.veg { background: rgba(46,125,50,0.1); color: var(--dark); border-color: rgba(46,125,50,0.3); }
-
 .btn-add-item { background: transparent; border: 1.5px solid var(--primary); color: var(--primary); font-family: var(--font-ui); font-size: 0.75rem; font-weight: 600; padding: 6px 14px; border-radius: 20px; cursor: pointer; margin-top: 8px; transition: all 0.2s ease; }
-.btn-add-item:hover, .btn-add-item.added { background: var(--primary); color: white; }
+.btn-add-item:hover { background: var(--primary); color: white; }
 
 @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 
-/* ============ FOOTER ============ */
 .footer { text-align: center; padding: 40px 20px 50px; color: #999; font-size: 0.9rem; }
 .footer-ornament { color: var(--gold); letter-spacing: 18px; font-size: 0.75rem; margin-bottom: 20px; opacity: 0.7; }
 .footer-message { font-family: var(--font-body); font-size: clamp(1rem, 3vw, 1.2rem); font-style: italic; color: var(--gold-light); letter-spacing: 1px; margin-bottom: 6px; }
@@ -170,11 +182,9 @@ body::before {
 .footer .small { font-family: var(--font-ui); font-size: 0.7rem; letter-spacing: 2px; text-transform: uppercase; margin-top: 8px; opacity: 0.6; }
 
 /* =====================================================
-   📸 CARRUSEL DE FOTOS AUTOMÁTICO
+   📸 CARRUSEL DE FOTOS
    ===================================================== */
-.simple-gallery {
-  margin: 20px 0;
-}
+.simple-gallery { margin: 20px 0; }
 
 .gallery-carousel {
   width: 100%;
@@ -275,7 +285,6 @@ body::before {
 .cart-enviar:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 .cart-enviar.enviando { background: var(--dark); box-shadow: 0 6px 20px rgba(46,125,50,0.4); }
 
-/* ============ TOAST ============ */
 .toast { position: fixed; top: 80px; left: 50%; transform: translateX(-50%) translateY(-20px); background: var(--dark); color: white; padding: 14px 20px; border-radius: 14px; box-shadow: 0 12px 40px rgba(46,125,50,0.5); z-index: 400; display: flex; align-items: center; gap: 12px; max-width: 90vw; opacity: 0; pointer-events: none; transition: all 0.35s ease; font-family: var(--font-ui); }
 .toast:not(.hidden) { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
 .toast.hidden { display: none !important; }
@@ -284,7 +293,6 @@ body::before {
 .toast-content p { font-size: 0.78rem; opacity: 0.9; }
 .toast.toast-error { background: var(--primary); box-shadow: 0 12px 40px rgba(198,40,40,0.5); }
 
-/* ============ RESPONSIVE EXTRA ============ */
 @media (max-width: 480px) {
   .hero { padding: 40px 18px 45px; }
   .menu-container { margin: 22px 10px 100px; padding: 30px 16px; }
@@ -293,28 +301,4 @@ body::before {
   .cart-item-nombre { font-size: 0.95rem; }
   .category-btn img { width: 1em !important; height: 1em !important; }
   .category-title img { width: 1em !important; height: 1em !important; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .logo, .menu-item, .cart-btn { transition: none !important; animation: none !important; }
-}
-/* Añade esto al final de tu styles.css actual */
-/* =====================================================
-   🌟 NUEVAS FUNCIONES: FILTROS, DESTACADOS, BADGES
-   ===================================================== */
-
-/* Sección Destacados */
-#destacados {
-  background: linear-gradient(180deg, var(--cream-2) 0%, var(--cream) 100%);
-  border: 2px solid var(--gold);
-  border-radius: 8px;
-  padding: 20px;
-  margin: 20px auto;
-  max-width: 800px;
-  width: calc(100% - 28px);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-}
-#destacados .category-title {
-  color: var(--gold-dark);
-  margin-bottom: 20px;
 }
