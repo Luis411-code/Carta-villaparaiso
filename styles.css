@@ -142,31 +142,166 @@ body.has-mesa .category-section { scroll-margin-top: 130px; }
 .footer .small { font-family: var(--font-ui); font-size: 0.7rem; letter-spacing: 2px; text-transform: uppercase; margin-top: 8px; opacity: 0.6; }
 
 /* =====================================================
-   📸 FOTO GRANDE (Sin textos encima ni al lado)
+   📸 GALERÍA INTERACTIVA (Foto a la derecha, Platos a la izquierda)
    ===================================================== */
-.gallery-layout {
+
+.subgroup-gallery {
+  display: flex;
+  align-items: stretch;
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  min-height: 280px;
+  margin-bottom: 20px;
+  background: #faf6ec;
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
+}
+
+/* La foto (derecha) */
+.gallery-photo {
+  flex: 1 1 100%;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  transition: all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+  border: 2px solid transparent;
+  box-sizing: border-box;
+}
+
+.gallery-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 10px;
+}
+
+/* Pequeño indicador para que sepan que se puede tocar */
+.gallery-photo::after {
+  content: "👆 Toca para ver preparaciones";
+  position: absolute;
+  bottom: 15px;
+  right: 15px;
+  background: rgba(10,18,13,0.8);
+  color: var(--gold-light);
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  padding: 6px 12px;
+  border-radius: 20px;
+  backdrop-filter: blur(4px);
+  transition: opacity 0.3s;
+  border: 1px solid var(--gold);
+}
+
+/* Las preparaciones (izquierda, inicialmente ocultas) */
+.gallery-variants {
+  flex: 0 0 0%;
+  opacity: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  width: 100%;
+  gap: 12px;
+  padding: 0;
+  transition: all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-sizing: border-box;
+}
+
+/* ESTADO EXPANDIDO */
+.subgroup-gallery.expanded .gallery-photo {
+  flex: 1 1 45%; /* La foto se encoge ocupando el 45% (se mueve a la derecha) */
+  border: 2px solid var(--gold);
+  margin-left: 15px; /* Espacio de separación */
+}
+
+.subgroup-gallery.expanded .gallery-photo::after {
+  content: "✕ Cerrar";
+  opacity: 1;
+}
+
+.subgroup-gallery.expanded .gallery-variants {
+  flex: 1 1 55%; /* Los platos toman el 55% (izquierda) */
+  opacity: 1;
+  padding: 10px 0 10px 10px;
+}
+
+/* Tarjetas de preparaciones */
+.variant-card {
+  background: #ffffff;
+  border: 1px solid rgba(212,163,115,0.3);
+  border-left: 4px solid var(--gold);
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.04);
+  opacity: 0;
+  transform: translateX(-30px);
+  animation: slideInVariant 0.5s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes slideInVariant {
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.variant-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 5px;
+}
+
+.variant-name {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--black-2);
+  line-height: 1.2;
+}
+
+.variant-price {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--gold-dark);
+  white-space: nowrap;
+}
+
+.variant-desc {
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: 0.9rem;
+  color: var(--text-light);
+  line-height: 1.4;
   margin-bottom: 10px;
 }
 
-.dish-photo-header {
-  width: 100%;
-  border-radius: 12px;
-  overflow: hidden;
-  margin-bottom: 20px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-  border: 2px solid var(--gold);
-  background: #1a1a1a;
-}
-
-.dish-photo-header img {
-  width: 100%;
-  height: auto;
-  max-height: 450px;
-  object-fit: cover;
-  display: block;
+/* Ajustes para Móviles */
+@media (max-width: 600px) {
+  .subgroup-gallery.expanded .gallery-photo {
+    flex: 1 1 40%; /* En móvil la foto es un poco más pequeña para dar espacio al texto */
+  }
+  .subgroup-gallery.expanded .gallery-variants {
+    flex: 1 1 60%;
+  }
+  .gallery-photo::after {
+    content: "👆 Ver platos";
+    font-size: 0.65rem;
+    bottom: 10px;
+    right: 10px;
+    padding: 4px 10px;
+  }
+  .subgroup-gallery.expanded .gallery-photo::after {
+    content: "✕";
+  }
+  .variant-card {
+    padding: 12px;
+  }
+  .variant-name { font-size: 1rem; }
+  .variant-price { font-size: 0.95rem; }
+  .variant-desc { font-size: 0.85rem; }
 }
 
 /* BOTÓN COMANDA */
@@ -249,13 +384,3 @@ body.has-mesa .category-section { scroll-margin-top: 130px; }
 .toast-content strong { display: block; font-size: 0.92rem; margin-bottom: 2px; }
 .toast-content p { font-size: 0.78rem; opacity: 0.9; }
 .toast.toast-error { background: var(--primary); box-shadow: 0 12px 40px rgba(198,40,40,0.5); }
-
-@media (max-width: 480px) {
-  .hero { padding: 40px 18px 45px; }
-  .menu-container { margin: 22px 10px 100px; padding: 30px 16px; }
-  .cart-btn { bottom: 20px; right: 16px; width: 58px; height: 58px; font-size: 1.4rem; }
-  .cart-item-subtotal { min-width: 60px; font-size: 0.9rem; }
-  .cart-item-nombre { font-size: 0.95rem; }
-  .category-btn img { width: 1em !important; height: 1em !important; }
-  .category-title img { width: 1em !important; height: 1em !important; }
-}
