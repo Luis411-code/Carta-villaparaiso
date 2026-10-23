@@ -1,15 +1,17 @@
 /* =====================================================
-   🛠️  ADMIN - VILLA PARAÍSO (Completo)
+   🛠️  ADMIN - VILLA PARAÍSO (Completo y Responsivo)
+   Paleta: Rojo Teja, Verde Selva, Ocre
    ===================================================== */
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
-  --primary: #C62828;
+  --primary: #C62828;       /* Rojo Teja */
   --primary-dark: #9b1c1c;
-  --dark: #2E7D32;
+  --primary-light: #ef9a9a;
+  --dark: #2E7D32;          /* Verde Selva */
   --dark-2: #1B5E20;
-  --ocre: #D4A373;
+  --ocre: #D4A373;          /* Ocre */
   --light: #fdfaf5;
   --text: #2a2a2a;
   --gray: #7a7a7a;
@@ -96,31 +98,23 @@ body { font-family: 'Poppins', -apple-system, sans-serif; background: var(--ligh
 .subgroup-title-input { flex: 1; padding: 9px 12px; border: 2px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 0.9rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; outline: none; }
 .subgroup-title-input:focus { border-color: var(--primary); }
 
-/* ============ ITEMS Y CHECKBOXES ============ */
+/* ============ ITEMS ============ */
 .item-row { background: #fafaf6; border-radius: 10px; padding: 14px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 10px; transition: background 0.2s; }
 .item-row:hover { background: #f5f2ea; }
-.item-row input[type="text"], .item-row input[type="number"], .item-row textarea { width: 100%; padding: 9px 12px; border: 2px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 0.85rem; outline: none; background: var(--white); transition: border-color 0.2s; }
+.item-row input, .item-row textarea { width: 100%; padding: 9px 12px; border: 2px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 0.85rem; outline: none; background: var(--white); transition: border-color 0.2s; }
 .item-row input:focus, .item-row textarea:focus { border-color: var(--primary); }
 .item-row textarea { resize: vertical; min-height: 40px; }
 .item-price-input { text-align: right; font-weight: 700; }
 
-/* Grid para Escritorio */
+/* Escritorio: Grid para los items */
 @media (min-width: 768px) {
   .item-row { display: grid; grid-template-columns: auto 2fr 1fr auto; align-items: center; }
-  /* Hacemos que textarea y los checkboxes ocupen todo el ancho abajo */
-  .item-row textarea, .admin-checks { grid-column: 1 / -1; }
+  .item-row textarea { grid-column: 1 / -1; }
   .item-actions { flex-direction: column; }
 }
-
 .item-actions { display: flex; gap: 6px; }
 .item-actions .btn-danger { padding: 8px 10px; font-size: 0.75rem; }
 .empty-msg { text-align: center; color: var(--gray); padding: 20px; font-size: 0.9rem; font-style: italic; }
-
-/* Nuevos Checkboxes de Atributos */
-.admin-checks { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; background: #fff; padding: 10px; border-radius: 8px; border: 1px dashed var(--border); }
-.admin-checks label { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; cursor: pointer; background: #f0f0f0; padding: 5px 10px; border-radius: 20px; transition: background 0.2s; user-select: none; }
-.admin-checks label:hover { background: #e0e0e0; }
-.admin-checks input[type="checkbox"] { cursor: pointer; accent-color: var(--primary); }
 
 /* ============ TOGGLE DE DISPONIBILIDAD ============ */
 .avail-toggle { position: relative; display: inline-flex; align-items: center; cursor: pointer; user-select: none; }
@@ -137,17 +131,86 @@ body { font-family: 'Poppins', -apple-system, sans-serif; background: var(--ligh
 .category-tools .tools-label { font-size: 0.75rem; font-weight: 600; color: var(--gray); text-transform: uppercase; letter-spacing: 0.5px; margin-right: 4px; }
 .category-tools button { font-size: 0.72rem; padding: 5px 10px; border-radius: 6px; font-weight: 600; border: 1px solid transparent; cursor: pointer; font-family: inherit; transition: all 0.15s; }
 .btn-all-on { background: #e6f4ea; color: var(--success); border-color: #b7e0c1; }
+.btn-all-on:hover { background: #c9e9d1; }
 .btn-all-off { background: #fdecea; color: var(--danger); border-color: #f5b7b1; }
+.btn-all-off:hover { background: #f9d5d2; }
 .avail-counter { margin-left: auto; font-size: 0.75rem; font-weight: 600; color: #fff; background: var(--primary); padding: 3px 10px; border-radius: 12px; letter-spacing: 0.5px; }
 
 /* ============ UPLOADER DE FOTOS ============ */
 .image-field { padding: 14px; background: #faf6ec; border: 1px dashed var(--ocre); border-radius: 10px; margin-bottom: 14px; }
 .image-field > label { display: block; font-size: 0.75rem; font-weight: 600; color: var(--primary-dark); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
 .drop-zone { border: 2px dashed #d8d0bc; border-radius: 10px; padding: 18px; text-align: center; background: #fffdf7; transition: all 0.25s ease; cursor: pointer; position: relative; overflow: hidden; }
-.drop-zone:hover, .drop-zone.dragover { border-color: var(--primary); background: #fdf8e9; }
+.drop-zone:hover, .drop-zone.dragover { border-color: var(--primary); background: #fdf8e9; transform: scale(1.01); }
+.drop-zone.dragover { border-style: solid; box-shadow: 0 0 0 4px rgba(198,40,40,0.15); }
 .drop-zone .drop-icon { font-size: 2rem; display: block; margin-bottom: 6px; opacity: 0.6; }
 .drop-zone .drop-text { font-size: 0.85rem; color: var(--text); font-weight: 500; }
+.drop-zone .drop-sub { font-size: 0.72rem; color: var(--gray); margin-top: 4px; display: block; }
 .drop-zone input[type="file"] { display: none; }
 .drop-zone.uploading { pointer-events: none; opacity: 0.7; }
 .drop-zone.uploading .drop-icon { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+.image-preview-box { display: flex; gap: 12px; align-items: center; padding: 10px; background: #fff; border: 1px solid var(--border); border-radius: 10px; margin-top: 10px; }
+.image-preview-box img { width: 80px; height: 80px; border-radius: 8px; object-fit: cover; border: 2px solid var(--primary); flex-shrink: 0; }
+.image-preview-info { flex: 1; min-width: 0; }
+.image-preview-info .filename { font-size: 0.75rem; color: var(--gray); word-break: break-all; margin-bottom: 6px; display: block; }
+.image-preview-info .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.image-preview-info .actions button { font-size: 0.72rem; padding: 6px 10px; border-radius: 6px; border: 1px solid transparent; cursor: pointer; font-family: inherit; font-weight: 600; transition: all 0.15s; }
+.btn-preview { background: #e8f0fe; color: #1967d2; border-color: #b8cef5 !important; }
+.btn-remove-img { background: #fdecea; color: var(--danger); border-color: #f5b7b1 !important; }
+.upload-progress { margin-top: 10px; height: 6px; background: #eee; border-radius: 3px; overflow: hidden; opacity: 0; transition: opacity 0.3s; }
+.upload-progress.active { opacity: 1; }
+.upload-progress .bar { height: 100%; width: 0%; background: var(--primary); transition: width 0.3s ease; border-radius: 3px; }
+
+.manual-url-toggle { display: inline-block; font-size: 0.72rem; color: var(--gray); cursor: pointer; margin-top: 8px; text-decoration: underline; }
+.manual-url-toggle:hover { color: var(--primary-dark); }
+.manual-url-wrap { display: none; margin-top: 8px; }
+.manual-url-wrap.open { display: block; }
+.manual-url-wrap input { width: 100%; padding: 9px 12px; border: 2px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 0.82rem; outline: none; }
+.manual-url-wrap input:focus { border-color: var(--primary); }
+
+/* ============ PEDIDOS ============ */
+.pedidos-toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; padding: 12px 16px; background: var(--white); border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+.rt-status { font-size: 0.78rem; font-weight: 600; color: var(--success); background: #e6f4ea; padding: 6px 12px; border-radius: 20px; margin-left: auto; display: inline-flex; align-items: center; gap: 6px; }
+.rt-status.offline { color: var(--danger); background: #fdecea; }
+.pedidos-container { display: flex; flex-direction: column; gap: 24px; }
+.pedidos-section-title { font-family: 'Cinzel', serif; font-size: 1rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--dark); padding: 10px 14px; margin-bottom: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+.pedidos-section-title.estado-pendiente { background: linear-gradient(90deg, #fdecea 0%, transparent 100%); border-left: 4px solid var(--danger); }
+.pedidos-section-title.estado-confirmado { background: linear-gradient(90deg, #fff3cd 0%, transparent 100%); border-left: 4px solid #e0a800; }
+.pedidos-count { font-family: 'Poppins', sans-serif; font-size: 0.8rem; font-weight: 700; color: var(--gray); background: rgba(0,0,0,0.06); padding: 3px 10px; border-radius: 12px; letter-spacing: 0; text-transform: none; }
+
+.pedido-card { background: var(--white); border-radius: 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); padding: 18px 20px; margin-bottom: 12px; border-left: 4px solid var(--primary); transition: all 0.25s ease; }
+.pedido-card.pendiente { border-left-color: var(--danger); }
+.pedido-card.confirmado { border-left-color: #e0a800; }
+.pedido-card.en_preparacion { border-left-color: var(--ocre); }
+.pedido-card.entregado { border-left-color: var(--success); opacity: 0.7; }
+.pedido-card.cancelado { border-left-color: #888; opacity: 0.5; text-decoration: line-through; }
+.pedido-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px dashed var(--border); flex-wrap: wrap; }
+.pedido-mesa { display: flex; align-items: center; gap: 10px; }
+.pedido-mesa .mesa-icon { width: 42px; height: 42px; border-radius: 10px; background: var(--dark); color: var(--ocre); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 700; font-family: 'Cinzel', serif; flex-shrink: 0; }
+.pedido-mesa-info .mesa-num { font-family: 'Cinzel', serif; font-size: 1.05rem; font-weight: 700; color: var(--dark); line-height: 1; }
+.pedido-mesa-info .mesa-hora { font-size: 0.75rem; color: var(--gray); margin-top: 4px; }
+.pedido-items { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.pedido-item { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 0.92rem; }
+.pedido-item .item-cant { font-family: 'Poppins', sans-serif; font-weight: 700; color: var(--primary); min-width: 32px; flex-shrink: 0; }
+.pedido-item .item-nom { flex: 1; color: var(--text); font-family: 'Poppins', sans-serif; }
+.pedido-item .item-sub { font-weight: 700; color: var(--dark); white-space: nowrap; }
+.pedido-notas { background: #fffbf0; border-left: 3px solid var(--ocre); padding: 8px 12px; border-radius: 6px; margin-bottom: 14px; font-size: 0.85rem; color: #856404; font-style: italic; }
+.pedido-total { display: flex; justify-content: space-between; align-items: baseline; padding: 12px 0; border-top: 2px solid var(--primary); margin-bottom: 14px; }
+.pedido-total span { font-size: 0.8rem; font-weight: 600; color: var(--gray); text-transform: uppercase; letter-spacing: 1px; }
+.pedido-total strong { font-family: 'Cinzel', serif; font-size: 1.5rem; color: var(--primary-dark); }
+.pedido-acciones { display: flex; gap: 8px; flex-wrap: wrap; }
+.pedido-btn { flex: 1; min-width: 120px; padding: 11px 16px; border-radius: 10px; border: 2px solid transparent; font-family: inherit; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.btn-confirmar { background: var(--success); color: white; }
+.btn-rechazar { background: transparent; color: var(--danger); border-color: var(--danger); }
+.btn-preparar { background: var(--ocre); color: white; }
+.btn-entregar { background: var(--dark); color: white; }
+
+/* Responsive Admin */
+@media (max-width: 640px) {
+  .admin-tabs { padding: 0 8px; }
+  .admin-tab { padding: 12px 14px; font-size: 0.82rem; }
+  .pedidos-toolbar { padding: 10px 12px; }
+  .pedido-card { padding: 14px 16px; }
+  .pedido-btn { min-width: 100%; font-size: 0.82rem; padding: 10px 12px; }
+}

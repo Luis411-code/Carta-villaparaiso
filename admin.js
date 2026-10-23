@@ -141,16 +141,9 @@ function render() {
     
     const iconInput = document.createElement('input'); iconInput.className = 'cat-icon-input'; iconInput.value = cat.icono || '🍽️'; iconInput.maxLength = 3; iconInput.oninput = () => { cat.icono = iconInput.value; markDirty(); };
     const nameInput = document.createElement('input'); nameInput.className = 'cat-name-input'; nameInput.value = cat.categoria || ''; nameInput.placeholder = 'Nombre de la categoría'; nameInput.oninput = () => { cat.categoria = nameInput.value; markDirty(); };
-    
-    // ⭐ Checkbox de Destacado
-    const destacadoLabel = document.createElement('label');
-    destacadoLabel.style.cssText = 'display:flex; align-items:center; gap:5px; cursor:pointer; font-weight:bold; color:var(--primary); font-size:0.85rem; background:#fff3cd; padding:8px 12px; border-radius:8px; border:1px solid #ffe69c; white-space:nowrap;';
-    destacadoLabel.innerHTML = `<input type="checkbox" ${cat.destacado ? 'checked' : ''} style="width:16px; height:16px; cursor:pointer;"> ⭐ Destacado`;
-    destacadoLabel.querySelector('input').onchange = (e) => { cat.destacado = e.target.checked; markDirty(); };
-
     const delCat = document.createElement('button'); delCat.className = 'btn-danger btn-small'; delCat.textContent = '🗑️ Eliminar'; delCat.onclick = () => { if (confirm(`¿Eliminar la categoría "${cat.categoria}"?`)) { menuData.categories = menuData.categories.filter(c => c.id !== cat.id); markDirty(); render(); } };
     
-    head.append(iconInput, nameInput, destacadoLabel, delCat); card.appendChild(head);
+    head.append(iconInput, nameInput, delCat); card.appendChild(head);
 
     const body = document.createElement('div'); body.className = 'category-body';
 
@@ -246,6 +239,9 @@ async function optimizeImage(file) {
   return new File([blob], `${file.name.replace(/\.[^.]+$/, '')}.webp`, { type: 'image/webp' });
 }
 
+// =====================================================
+// 📸 CAMPO DE GALERÍA MULTI-FOTO (Admin)
+// =====================================================
 function renderGalleryField(obj, labelText) {
   const wrap = document.createElement('div'); wrap.className = 'image-field';
   const label = document.createElement('label'); label.textContent = `📸 ${labelText} (Carrusel)`; wrap.appendChild(label);
