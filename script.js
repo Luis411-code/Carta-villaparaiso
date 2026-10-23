@@ -135,11 +135,6 @@ function actualizarUI() {
 
   cartTotal.textContent = formatPrice(calcularTotal());
 
-  document.querySelectorAll('.btn-add-item').forEach(btn => {
-    const enCarrito = carrito.some(i => i.nombre === btn.dataset.nombre);
-    if (enCarrito) { btn.classList.add('added'); btn.textContent = '✓ En la comanda'; } 
-    else { btn.classList.remove('added'); btn.textContent = '+ Añadir'; }
-  });
 }
 
 // ==================== TOAST Y ENVÍO ====================

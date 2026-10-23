@@ -438,6 +438,7 @@ function renderPedidos() {
   });
 }
 
+// Solo la función renderPedidoCard (busca y reemplaza esta función en tu mesero.js)
 function renderPedidoCard(pedido) {
   const hora = new Date(pedido.creado_en);
   const horaStr = hora.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
@@ -445,7 +446,6 @@ function renderPedidoCard(pedido) {
   const urgente = (Date.now() - hora.getTime()) > 10 * 60 * 1000 && pedido.estado === 'pendiente';
 
   const items = Array.isArray(pedido.items) ? pedido.items : [];
-
   const itemsHTML = items.map(item => `
     <div class="pedido-item-row">
       <span class="qty">×${item.cantidad}</span>
@@ -454,89 +454,40 @@ function renderPedidoCard(pedido) {
     </div>
   `).join('');
 
-  const notasHTML = pedido.notas
-    ? `<div class="pedido-notas">📝 ${escapeHTML(pedido.notas)}</div>`
-    : '';
+  // 🚨 Alerta visual si hay alergias
+  let notasHTML = '';
+  if (pedido.notas) {
+    const tieneAlergia = /alergi|alérgic|celiac|gluten|lactosa|marisco|maní|cacahuete/i.test(pedido.notas);
+    const claseAlerta = tieneAlergia ? 'pedido-notas alerta-alergia' : 'pedido-notas';
+    const icono = tieneAlergia ? '🚨 ¡ALERGIA!' : '📝 Notas:';
+    notasHTML = `<div class="${claseAlerta}">${icono} ${escapeHTML(pedido.notas)}</div>`;
+  }
 
-  const estadosLabel = {
-    pendiente: '🔴 Pendiente',
-    confirmado: '🟡 Confirmado',
-    en_preparacion: '🍳 Preparando',
-    entregado: '🟢 Entregado',
-    cancelado: '⚫ Cancelado'
-  };
+  const estadosLabel = { pendiente: '🔴 Pendiente', confirmado: '🟡 Confirmado', en_preparacion: '🍳 Preparando', entregado: '🟢 Entregado', cancelado: '⚫ Cancelado' };
 
   let botonesHTML = '';
   switch (pedido.estado) {
-    case 'pendiente':
-      botonesHTML = `
-        <button class="pedido-btn btn-confirmar" data-action="confirmar" data-id="${pedido.id}">
-          ✅ Confirmar
-        </button>
-        <button class="pedido-btn btn-rechazar" data-action="rechazar" data-id="${pedido.id}">
-          ❌
-        </button>
-      `;
-      break;
-    case 'confirmado':
-      botonesHTML = `
-        <button class="pedido-btn btn-preparar" data-action="preparar" data-id="${pedido.id}">
-          🍳 Enviar a cocina
-        </button>
-        <button class="pedido-btn btn-rechazar" data-action="rechazar" data-id="${pedido.id}">
-          ❌
-        </button>
-      `;
-      break;
-    case 'en_preparacion':
-      botonesHTML = `
-        <button class="pedido-btn btn-entregar" data-action="entregar" data-id="${pedido.id}">
-          ✅ Marcar entregado
-        </button>
-      `;
-      break;
-    case 'entregado':
-    case 'cancelado':
-      botonesHTML = `
-        <button class="pedido-btn btn-reabrir" data-action="reabrir" data-id="${pedido.id}">
-          🔄 Reabrir
-        </button>
-      `;
-      break;
+    case 'pendiente': botonesHTML = `<button class="pedido-btn btn-confirmar" data-action="confirmar" data-id="${pedido.id}">✅ Confirmar</button><button class="pedido-btn btn-rechazar" data-action="rechazar" data-id="${pedido.id}">❌</button>`; break;
+    case 'confirmado': botonesHTML = `<button class="pedido-btn btn-preparar" data-action="preparar" data-id="${pedido.id}">🍳 Enviar a cocina</button><button class="pedido-btn btn-rechazar" data-action="rechazar" data-id="${pedido.id}">❌</button>`; break;
+    case 'en_preparacion': botonesHTML = `<button class="pedido-btn btn-entregar" data-action="entregar" data-id="${pedido.id}">✅ Marcar entregado</button>`; break;
+    case 'entregado': case 'cancelado': botonesHTML = `<button class="pedido-btn btn-reabrir" data-action="reabrir" data-id="${pedido.id}">🔄 Reabrir</button>`; break;
   }
 
   return `
     <div class="pedido-card ${pedido.estado}">
       <div class="pedido-head">
         <div class="pedido-mesa-info">
-          <div class="mesa-badge">
-            <div class="mesa-num">${escapeHTML(pedido.mesa || '?')}</div>
-            <div class="mesa-label">MESA</div>
-          </div>
-          <div class="pedido-datos">
-            <div class="pedido-hora">🕐 ${horaStr}</div>
-            <div class="pedido-tiempo ${urgente ? 'urgente' : ''}">
-              ${urgente ? '⚠️ ' : ''}${hace}
-            </div>
-          </div>
+          <div class="mesa-badge"><div class="mesa-num">${escapeHTML(pedido.mesa || '?')}</div><div class="mesa-label">MESA</div></div>
+          <div class="pedido-datos"><div class="pedido-hora">🕐 ${horaStr}</div><div class="pedido-tiempo ${urgente ? 'urgente' : ''}">${urgente ? '⚠️ ' : ''}${hace}</div></div>
         </div>
         <div class="estado-pill ${pedido.estado}">${estadosLabel[pedido.estado] || pedido.estado}</div>
       </div>
-
       <div class="pedido-body">
-        <div class="pedido-items-list">
-          ${itemsHTML}
-        </div>
+        <div class="pedido-items-list">${itemsHTML}</div>
         ${notasHTML}
-        <div class="pedido-total-row">
-          <span class="label">Total</span>
-          <span class="valor">$${Number(pedido.total).toFixed(2)}</span>
-        </div>
+        <div class="pedido-total-row"><span class="label">Total</span><span class="valor">$${Number(pedido.total).toFixed(2)}</span></div>
       </div>
-
-      <div class="pedido-acciones">
-        ${botonesHTML}
-      </div>
+      <div class="pedido-acciones">${botonesHTML}</div>
     </div>
   `;
 }

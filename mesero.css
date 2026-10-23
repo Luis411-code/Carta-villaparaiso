@@ -158,3 +158,22 @@ html, body { height: 100%; font-family: 'Poppins', -apple-system, sans-serif; ba
   .btn-rechazar, .btn-reabrir { min-width: 100%; }
   .stat-num { font-size: 1.1rem; }
 }
+/* Alerta visual para alergias */
+.pedido-notas.alerta-alergia {
+  background-color: #fdecea; 
+  border: 2px solid var(--danger);
+  border-left: 6px solid var(--danger);
+  color: var(--danger);
+  font-weight: bold;
+  animation: pulseAlergia 2s infinite;
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+}
+
+@keyframes pulseAlergia {
+  0% { box-shadow: 0 0 0 0 rgba(198, 40, 40, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(198, 40, 40, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(198, 40, 40, 0); }
+}
