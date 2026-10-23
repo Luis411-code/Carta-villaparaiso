@@ -4,12 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
   <title>Villa Paraíso Guardalavaca · Carta</title>
-  <meta name="description" content="Carta digital del restaurante Villa Paraíso Guardalavaca" />
   <link rel="icon" type="image/png" href="img/logo.png" />
-
   <link rel="preconnect" href="https://fonts.bunny.net" />
   <link href="https://fonts.bunny.net/css?family=cinzel:400,600,700|cormorant-garamond:400,500,600|poppins:300,400,500,600" rel="stylesheet" />
-
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -21,17 +18,14 @@
       <div class="logo-wrapper">
         <img src="img/logo.png" alt="Logo Villa Paraíso Guardalavaca" class="logo" id="heroLogo" />
       </div>
-
       <div class="hero-divider">
         <span class="divider-line"></span>
         <span class="divider-icon">✦</span>
         <span class="divider-line"></span>
       </div>
-
       <h1 id="heroNombre">Villa Paraíso</h1>
       <p class="subtitle" id="heroSubtitulo">Guardalavaca</p>
       <p class="tagline" id="heroTagline">Cocina del mar &amp; parrilla</p>
-
       <div class="info-badges">
         <span id="heroHoras">🕐 12:00 - 23:00</span>
       </div>
@@ -39,7 +33,6 @@
   </header>
 
   <nav class="categories" id="categories"></nav>
-
   <main id="menu" class="menu-container"></main>
 
   <footer class="footer">
@@ -55,72 +48,25 @@
     <span id="cartCount" class="cart-count">0</span>
   </button>
 
-  <!-- 📋 PANEL DE LA COMANDA (ESTILO LIBRETA) -->
+  <!-- 📋 PANEL DE LA COMANDA -->
   <div id="cartOverlay" class="cart-overlay hidden">
     <div id="cartPanel" class="cart-panel">
-
-      <!-- Cabecera de la libreta -->
-      <div class="comanda-header">
-        <div class="comanda-titulo">
-          <img src="img/logo.png" alt="Logo" class="comanda-logo" />
-          <h2>COMANDA</h2>
-        </div>
-        
-        <div class="comanda-meta">
-          <div class="meta-field">
-            <label>MESA</label>
-            <span id="comandaMesa">—</span>
-          </div>
-          <div class="meta-field">
-            <label>FECHA</label>
-            <span id="comandaFecha">--/--/----</span>
-          </div>
-        </div>
+      <div class="cart-header">
+        <h2>📋 Pedido</h2>
+        <button id="cartClose" class="cart-close" aria-label="Cerrar">✕</button>
       </div>
-
-      <!-- Tabla de la comanda -->
-      <div class="comanda-tabla-header">
-        <span class="col-qty">CANT</span>
-        <span class="col-desc">DESCRIPCIÓN</span>
-        <span class="col-valor">VALOR</span>
-      </div>
-
-      <div id="cartItems" class="cart-items">
-        <!-- Se llena desde JS -->
-      </div>
-
-      <!-- Pie de la libreta -->
+      <div id="cartItems" class="cart-items"></div>
       <div class="cart-footer">
-        <div class="comanda-footer-row">
-          <div class="footer-notas">
-            <label>NOTAS / OBSERVACIONES</label>
-            <!-- AVISO DE ALERGIA -->
-            <p style="font-size: 0.7rem; color: #C62828; margin-bottom: 5px; font-weight: 600;">
-              ⚠️ Si eres alérgico a algún ingrediente, por favor escríbelo aquí.
-            </p>
-            <textarea id="cartNotas" placeholder="Ej: Alérgico a los mariscos, sin cebolla..." rows="2"></textarea>
-          </div>
+        <div class="cart-field">
+          <label for="cartNotas">Notas para la cocina (opcional)</label>
+          <textarea id="cartNotas" placeholder="Ej: sin cebolla, término medio..." rows="2"></textarea>
         </div>
-
-        <div class="comanda-total-row">
-          <div class="atendente-field">
-            <label>ATENDENTE</label>
-            <span>Mesero de turno</span>
-          </div>
-          <div class="total-box">
-            <label>TOTAL</label>
-            <strong id="cartTotal">$0.00</strong>
-          </div>
+        <div class="cart-total">
+          <span>Total:</span>
+          <strong id="cartTotal">$0.00</strong>
         </div>
-
-        <button id="cartEnviar" class="cart-enviar">
-          ✅ Enviar a Cocina
-        </button>
+        <button id="cartEnviar" class="cart-enviar">✅ Enviar</button>
       </div>
-
-      <!-- Botón de cerrar -->
-      <button id="cartClose" class="cart-close-floating" aria-label="Cerrar">✕</button>
-
     </div>
   </div>
 
@@ -128,8 +74,8 @@
   <div id="toast" class="toast hidden">
     <span class="toast-icon">✅</span>
     <div class="toast-content">
-      <strong id="toastTitle">Comanda enviada</strong>
-      <p id="toastMsg">Tu mesero la recibirá en un momento</p>
+      <strong id="toastTitle">Pedido enviada</strong>
+      <p id="toastMsg">Sera atendido en un momento</p>
     </div>
   </div>
 
