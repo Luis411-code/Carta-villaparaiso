@@ -117,7 +117,7 @@
         <div class="site-config-grid">
           <div class="site-field full">
             <label>Clave Secreta (Middleware)</label>
-            <input type="text" id="qr-secret" value="VillaParaiso-Secreto-Muy-Dificil-De-Adivinar-2025" />
+            <input type="text" id="qr-secret" value="VillaParaiso-Secreto-Muy-Dificil-De-Advinar-2025" />
           </div>
           <div class="site-field">
             <label>Mesa desde (Número)</label>
@@ -137,7 +137,8 @@
     <main id="tabMeseros" class="admin-main hidden">
       <section class="site-config">
         <h2 class="site-config-title">🧑‍🍳 Control de Turnos del Personal</h2>
-        <p class="site-config-help">Aquí puedes ver la hora de entrada y salida de cada mesero.</p>
+        <p class="site-config-help">Revisa la hora de entrada, salida, ventas totales y qué pedidos gestionó cada mesero.</p>
+        
         <button id="refreshTurnosBtn" class="btn-secondary" style="margin-bottom: 15px;">🔄 Actualizar Lista</button>
         
         <div style="overflow-x: auto;">
@@ -147,14 +148,30 @@
                 <th style="padding: 10px; border: 1px solid var(--border);">Mesero</th>
                 <th style="padding: 10px; border: 1px solid var(--border);">Entrada</th>
                 <th style="padding: 10px; border: 1px solid var(--border);">Salida</th>
+                <th style="padding: 10px; border: 1px solid var(--border);">Ventas</th>
+                <th style="padding: 10px; border: 1px solid var(--border);">Pedidos</th>
                 <th style="padding: 10px; border: 1px solid var(--border);">Estado</th>
+                <th style="padding: 10px; border: 1px solid var(--border);">Acciones</th>
               </tr>
             </thead>
-            <tbody id="turnosTableBody"></tbody>
+            <tbody id="turnosTableBody">
+              <!-- Se llena desde JS -->
+            </tbody>
           </table>
         </div>
       </section>
     </main>
+
+    <!-- VENTANA MODAL PARA DETALLES -->
+    <div id="modalTurno" class="modal hidden">
+      <div class="modal-content">
+        <span class="close-modal" id="closeModalBtn">&times;</span>
+        <h2 id="modalTurnoTitulo" style="font-family: 'Cinzel'; color: var(--dark); margin-bottom: 15px;">Detalles del Turno</h2>
+        <div id="modalTurnoBody" style="max-height: 60vh; overflow-y: auto;">
+          <!-- Detalles del turno -->
+        </div>
+      </div>
+    </div>
 
   </div>
 

@@ -41,10 +41,18 @@ const qrHasta = document.getElementById('qr-hasta');
 // Meseros Elements
 const turnosTableBody = document.getElementById('turnosTableBody');
 const refreshTurnosBtn = document.getElementById('refreshTurnosBtn');
+const modalTurno = document.getElementById('modalTurno');
+const modalTurnoTitulo = document.getElementById('modalTurnoTitulo');
+const modalTurnoBody = document.getElementById('modalTurnoBody');
+const closeModalBtn = document.getElementById('closeModalBtn');
 
 const SECRETO_DEFAULT = 'VillaParaiso-Secreto-Muy-Dificil-De-Advinar-2025';
 const uid = () => Math.random().toString(36).slice(2, 10);
 function markDirty() { hasUnsavedChanges = true; statusBar.classList.remove('hidden'); }
+
+// Evento para cerrar el modal
+closeModalBtn.onclick = () => modalTurno.classList.add('hidden');
+modalTurno.onclick = (e) => { if (e.target === modalTurno) modalTurno.classList.add('hidden'); };
 
 // =====================================================
 // 🔐 AUTENTICACIÓN
@@ -192,18 +200,21 @@ async function configurarBotonVerMenu() {
 // 🧑‍🍳 CONTROL DE TURNOS
 // =====================================================
 async function cargarTurnos() {
-  turnosTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px;">Cargando turnos...</td></tr>';
+  turnosTableBody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px;">Calculando turnos y ventas...</td></tr>';
   
   try {
-    const { data, error } = await supabase.from('turnos').select('*').order('inicio', { ascending: false }).limit(50);
-    if (error) throw error;
+    const { data: turnos, error: errTurnos } = await supabase.from('turnos').select('*').order('inicio', { ascending: false }).limit(50);
+    if (errTurnos) throw errTurnos;
 
-    if (data.length === 0) {
-      turnosTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color: #888;">No hay turnos registrados aún.</td></tr>';
+    if (turnos.length === 0) {
+      turnosTableBody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color: #888;">No hay turnos registrados aún.</td></tr>';
       return;
     }
 
-    turnosTableBody.innerHTML = data.map(turno => {
+    const { data: pedidos, error: errPedidos } = await supabase.from('pedidos').select('*').order('creado_en', { ascending: false }).limit(1000);
+    if (errPedidos) throw errPedidos;
+
+    turnosTableBody.innerHTML = turnos.map(turno => {
       const fechaInicio = new Date(turno.inicio);
       const horaInicio = fechaInicio.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
       const diaInicio = fechaInicio.toLocaleDateString('es-ES');
@@ -211,28 +222,70 @@ async function cargarTurnos() {
       let horaFin = '—';
       let estado = '🟢 Activo';
       let colorEstado = 'var(--success)';
+      const finDate = turno.fin ? new Date(turno.fin) : new Date();
       
       if (turno.fin) {
-        horaFin = new Date(turno.fin).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+        horaFin = finDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
         estado = '⚪ Finalizado';
         colorEstado = 'var(--gray)';
       }
+
+      const pedidosTurno = pedidos.filter(p => {
+        const fechaPedido = new Date(p.creado_en);
+        return fechaPedido >= fechaInicio && fechaPedido <= finDate;
+      });
+
+      const ventasTotales = pedidosTurno.filter(p => p.estado !== 'cancelado').reduce((sum, p) => sum + Number(p.total), 0);
+      const cantidadPedidos = pedidosTurno.length;
+      const pedidosJson = encodeURIComponent(JSON.stringify(pedidosTurno));
 
       return `
         <tr>
           <td style="padding: 10px; border: 1px solid var(--border); font-weight: bold;">${turno.mesero_nombre}</td>
           <td style="padding: 10px; border: 1px solid var(--border);">${diaInicio} a las ${horaInicio}</td>
           <td style="padding: 10px; border: 1px solid var(--border);">${turno.fin ? horaFin : 'Trabajando...'}</td>
+          <td style="padding: 10px; border: 1px solid var(--border); font-weight: bold; color: var(--primary);">$${ventasTotales.toFixed(2)}</td>
+          <td style="padding: 10px; border: 1px solid var(--border);">${cantidadPedidos}</td>
           <td style="padding: 10px; border: 1px solid var(--border); color: ${colorEstado}; font-weight: bold;">${estado}</td>
+          <td style="padding: 10px; border: 1px solid var(--border); text-align: center;">
+            <button class="btn-secondary btn-small" onclick="verDetalleTurno('${turno.mesero_nombre}', '${pedidosJson}')">👁️ Ver</button>
+          </td>
         </tr>
       `;
     }).join('');
 
   } catch (err) {
     console.error(err);
-    turnosTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color: red;">Error al cargar turnos.</td></tr>';
+    turnosTableBody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color: red;">Error al cargar turnos.</td></tr>';
   }
 }
+
+window.verDetalleTurno = function(nombreMesero, pedidosJson) {
+  const pedidos = JSON.parse(decodeURIComponent(pedidosJson));
+  modalTurnoTitulo.textContent = `Pedidos de ${nombreMesero}`;
+  
+  if (pedidos.length === 0) {
+    modalTurnoBody.innerHTML = '<p style="text-align:center; padding: 20px; color: #888;">No se registraron pedidos en este turno.</p>';
+  } else {
+    modalTurnoBody.innerHTML = pedidos.map(p => {
+      const hora = new Date(p.creado_en).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+      const estadoBadge = { pendiente: '🔴', confirmado: '🟡', en_preparacion: '🍳', entregado: '🟢', cancelado: '⚫' }[p.estado] || '';
+
+      return `
+        <div class="turno-detalle-item">
+          <div>
+            <strong>Mesa ${p.mesa}</strong> - ${hora} ${estadoBadge}
+            <div style="font-size: 0.8rem; color: var(--gray); margin-top: 4px;">
+              ${p.items.map(i => `${i.cantidad}x ${i.nombre}`).join(', ')}
+            </div>
+          </div>
+          <div style="font-weight: bold; color: var(--dark);">$${Number(p.total).toFixed(2)}</div>
+        </div>
+      `;
+    }).join('');
+  }
+  modalTurno.classList.remove('hidden');
+};
 
 if (refreshTurnosBtn) refreshTurnosBtn.onclick = cargarTurnos;
 
