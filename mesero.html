@@ -20,12 +20,8 @@
       <p class="login-sub">Villa Paraíso Guardalavaca</p>
 
       <form id="loginForm">
-        <!-- Campo de Nombre (oculto por defecto, visible en registro) -->
-        <div id="nombreField" style="display: none; width: 100%;">
-          <input type="text" id="nombre" placeholder="Tu nombre completo" style="width: 100%; padding: 14px 16px; border: 2px solid var(--border); border-radius: 10px; font-family: inherit; font-size: 0.95rem; margin-bottom: 12px;" />
-        </div>
-        
-        <input type="email" id="email" placeholder="Correo electrónico" required />
+        <!-- Solo pedimos el nombre -->
+        <input type="text" id="nombre" placeholder="Escribe tu nombre (Ej: Juan)" required />
         <input type="password" id="password" placeholder="Contraseña" required />
         
         <button type="submit" class="btn-primary" id="authBtn">Entrar</button>
@@ -42,8 +38,6 @@
 
   <!-- ============ PANEL ============ -->
   <div id="meseroScreen" class="mesero-screen hidden">
-
-    <!-- Header -->
     <header class="mesero-header">
       <div class="header-left">
         <img src="img/logo.png" alt="Logo" class="header-logo" />
@@ -58,14 +52,12 @@
       </div>
     </header>
 
-    <!-- Barra de estado notificaciones -->
     <div id="notifBar" class="notif-bar hidden">
       <span class="notif-icon">🔔</span>
       <span class="notif-text">Activa las notificaciones para no perderte ningún pedido</span>
       <button id="activarNotifBtn" class="btn-notif">Activar</button>
     </div>
 
-    <!-- Toolbar -->
     <div class="mesero-toolbar">
       <button class="filtro-btn active" data-filtro="activos">
         🔴 Activos
@@ -73,16 +65,11 @@
       </button>
       <button class="filtro-btn" data-filtro="hoy">📅 Hoy</button>
       <button class="filtro-btn" data-filtro="historial">📁 Historial</button>
-
       <button id="refreshBtn" class="btn-refresh" title="Refrescar">🔄</button>
     </div>
 
-    <!-- Contenedor de pedidos -->
-    <main id="pedidosContainer" class="pedidos-container">
-      <!-- Se llena desde JS -->
-    </main>
+    <main id="pedidosContainer" class="pedidos-container"></main>
 
-    <!-- Resumen rápido (footer) -->
     <footer class="mesero-footer">
       <div class="footer-stat">
         <span class="stat-num" id="statActivos">0</span>
@@ -97,10 +84,8 @@
         <span class="stat-label">Pedidos hoy</span>
       </div>
     </footer>
-
   </div>
 
-  <!-- Toast -->
   <div id="toast" class="toast hidden">
     <span class="toast-icon">🔔</span>
     <div class="toast-content">

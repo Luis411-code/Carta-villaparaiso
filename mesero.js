@@ -1,6 +1,5 @@
 // =====================================================
 // 🧑‍🍳 PANEL DEL MESERO - VILLA PARAÍSO GUARDALAVACA
-// Login/Registro, Control de Turnos, 3 Capas de Notificación
 // =====================================================
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './supabase-config.js';
@@ -10,7 +9,6 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: { lock: async (name, acquireTimeout, fn) => await fn() }
 });
 
-// ========== ESTADO ==========
 let pedidosActuales = [];
 let idsConocidos = new Set();
 let filtroActual = 'activos';
@@ -25,7 +23,7 @@ let yaRegistrado = false;
 let alarmaActiva = false;
 let intervaloAlarma = null;
 
-// ========== DOM ==========
+// Elementos DOM
 const loginScreen = document.getElementById('loginScreen');
 const meseroScreen = document.getElementById('meseroScreen');
 const loginForm = document.getElementById('loginForm');
@@ -48,14 +46,13 @@ const toastMsg = document.getElementById('toastMsg');
 // Auth DOM
 const authTitle = document.getElementById('authTitle');
 const authBtn = document.getElementById('authBtn');
-const nombreField = document.getElementById('nombreField');
 const authToggleText = document.getElementById('authToggleText');
 const authToggleLink = document.getElementById('authToggleLink');
 
 const VAPID_PUBLIC_KEY = 'BBEN4za2_pHp5jUM1ZDBXV6fBZe7T-74QBUxNWg9VwNJ55h048_m-dnIl5bOi-6VZkO36U68kHW8SLZlWbYsjRs';
 
 // =====================================================
-// 🔐 AUTENTICACIÓN Y TURNOS
+// 🔐 AUTENTICACIÓN CON NOMBRE
 // =====================================================
 let isRegisterMode = false;
 
@@ -66,44 +63,67 @@ authToggleLink.addEventListener('click', (e) => {
   if (isRegisterMode) {
     authTitle.textContent = 'Crear Cuenta';
     authBtn.textContent = 'Registrarse';
-    nombreField.style.display = 'block';
     authToggleText.textContent = '¿Ya tienes cuenta?';
     authToggleLink.textContent = 'Inicia sesión aquí';
   } else {
     authTitle.textContent = 'Iniciar Sesión';
     authBtn.textContent = 'Entrar';
-    nombreField.style.display = 'none';
     authToggleText.textContent = '¿Eres mesero nuevo?';
     authToggleLink.textContent = 'Regístrate aquí';
   }
   loginError.textContent = '';
 });
 
+// 🪄 Función mágica: Convierte "Juan Pérez" en "juan-perez@mesero.villaparaiso.com"
+function generarEmailFalso(nombre) {
+  const slug = nombre.toLowerCase().trim()
+    .replace(/\s+/g, '-')         // Reemplaza espacios por guiones
+    .replace(/[^a-z0-9-]/g, '');  // Quita tildes y caracteres raros
+  return `${slug}@mesero.villaparaiso.com`;
+}
+
 loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   loginError.textContent = '';
-  const email = document.getElementById('email').value;
+  const nombreRaw = document.getElementById('nombre').value.trim();
   const password = document.getElementById('password').value;
+  
+  if (!nombreRaw) {
+    loginError.textContent = '❌ Por favor, escribe tu nombre.';
+    return;
+  }
+
+  const emailInterno = generarEmailFalso(nombreRaw);
+  
   authBtn.disabled = true;
   authBtn.textContent = 'Cargando...';
 
   try {
     if (isRegisterMode) {
-      const nombre = document.getElementById('nombre').value.trim();
-      if (!nombre) throw new Error('Por favor, escribe tu nombre.');
-      
+      // REGISTRO
       const { data, error } = await supabase.auth.signUp({
-        email, password, options: { data: { nombre: nombre } }
+        email: emailInterno,
+        password,
+        options: { data: { nombre: nombreRaw } } // Guardamos el nombre original
       });
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes('already registered')) {
+          throw new Error('Ese nombre ya está en uso. Si te llamas "Juan", intenta con "Juan Perez" o "Juan 2".');
+        }
+        throw error;
+      }
       
       if (data.user && !data.session) {
          alert('Registro exitoso. Ya puedes iniciar sesión.');
          authToggleLink.click();
       }
     } else {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
+      // LOGIN
+      const { error } = await supabase.auth.signInWithPassword({
+        email: emailInterno,
+        password
+      });
+      if (error) throw new Error('Nombre o contraseña incorrectos.');
     }
   } catch (err) {
     loginError.textContent = '❌ ' + err.message;
@@ -128,6 +148,9 @@ function mostrarLogin() {
   detenerAlarma();
   loginScreen.classList.remove('hidden');
   meseroScreen.classList.add('hidden');
+  document.getElementById('nombre').value = '';
+  document.getElementById('password').value = '';
+  
   if (realtimeChannel) { supabase.removeChannel(realtimeChannel); realtimeChannel = null; realtimeActivo = false; }
   if (timerActualizar) { clearInterval(timerActualizar); timerActualizar = null; }
   if (timerWatchdog) { clearInterval(timerWatchdog); timerWatchdog = null; }
@@ -142,13 +165,16 @@ async function activarSesion(session) {
   loginScreen.classList.add('hidden');
   meseroScreen.classList.remove('hidden');
   
-  const nombreMesero = session.user.user_metadata?.nombre || session.user.email.split('@')[0];
+  const nombreMesero = session.user.user_metadata?.nombre || 'Mesero';
   userEmail.innerHTML = `👨‍🍳 ${nombreMesero}`;
 
   // Registrar entrada (Turno)
   let turnoId = localStorage.getItem('turno_activo');
   if (!turnoId) {
-    const { data } = await supabase.from('turnos').insert({ mesero_id: session.user.id, mesero_nombre: nombreMesero }).select().single();
+    const { data } = await supabase.from('turnos').insert({ 
+      mesero_id: session.user.id, 
+      mesero_nombre: nombreMesero 
+    }).select().single();
     if (data) localStorage.setItem('turno_activo', data.id);
   }
 
@@ -194,20 +220,12 @@ function urlBase64ToUint8Array(base64String) {
 async function verificarNotificaciones() {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
   const permission = Notification.permission;
-  if (permission === 'granted') {
-    await registrarNotificaciones();
-    notifBar.classList.add('hidden');
-  } else if (permission === 'default') {
-    notifBar.classList.remove('hidden');
-  } else {
-    notifBar.classList.add('hidden');
-  }
+  if (permission === 'granted') { await registrarNotificaciones(); notifBar.classList.add('hidden'); }
+  else if (permission === 'default') { notifBar.classList.remove('hidden'); }
+  else { notifBar.classList.add('hidden'); }
 }
 
-activarNotifBtn.onclick = async () => {
-  await registrarNotificaciones();
-  notifBar.classList.add('hidden');
-};
+activarNotifBtn.onclick = async () => { await registrarNotificaciones(); notifBar.classList.add('hidden'); };
 
 async function registrarNotificaciones() {
   if (registrandoNotif || yaRegistrado) return;
@@ -222,8 +240,7 @@ async function registrarNotificaciones() {
     let subscription = await registration.pushManager.getSubscription();
     if (!subscription) {
       subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+        userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
       });
     }
     const subJson = subscription.toJSON();
@@ -233,15 +250,12 @@ async function registrarNotificaciones() {
 
     if (error) throw error;
     yaRegistrado = true;
-  } catch (err) {
-    console.error('❌ Error notificaciones:', err);
-  } finally {
-    registrandoNotif = false;
-  }
+  } catch (err) { console.error('❌ Error notificaciones:', err); } 
+  finally { registrandoNotif = false; }
 }
 
 // =====================================================
-// 📥 CARGAR Y RENDERIZAR PEDIDOS
+// 📥 CARGAR Y RENDERIZAR PEDIDOS (Sin cambios)
 // =====================================================
 async function cargarPedidos(detectarNuevos = true) {
   try {
