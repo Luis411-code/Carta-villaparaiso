@@ -47,6 +47,7 @@
     <nav class="admin-tabs">
       <button class="admin-tab active" data-tab="carta">🍽️ Carta</button>
       <button class="admin-tab" data-tab="qrs">📱 Generar QR</button>
+      <button class="admin-tab" data-tab="meseros">🧑‍🍳 Control Meseros</button>
     </nav>
 
     <div id="statusBar" class="status-bar hidden">
@@ -59,9 +60,7 @@
 
       <section class="site-config">
         <h2 class="site-config-title">🏠 Textos de la Portada y el Pie de Página</h2>
-        <p class="site-config-help">
-          Cambia aquí los textos que ven los clientes al abrir la carta.
-        </p>
+        <p class="site-config-help">Cambia aquí los textos que ven los clientes al abrir la carta.</p>
 
         <h3 class="site-config-subtitle">📌 Encabezado de la página</h3>
         <div class="site-config-grid">
@@ -103,7 +102,6 @@
       <div class="admin-actions">
         <button id="addCategoryBtn" class="btn-add">+ Añadir categoría</button>
         <button id="reloadBtn" class="btn-secondary">🔄 Recargar</button>
-        <!-- Modificado para abrir con el token de la Mesa 1 -->
         <a href="#" id="verMenuBtn" target="_blank" class="btn-secondary">👁️ Ver menú (Mesa 1)</a>
       </div>
 
@@ -114,9 +112,7 @@
     <main id="tabQrs" class="admin-main hidden">
       <section class="site-config">
         <h2 class="site-config-title">📱 Generador de Códigos QR</h2>
-        <p class="site-config-help">
-          Genera e imprime los códigos QR para tus mesas. <strong>Importante:</strong> La "Clave Secreta" debe ser exactamente la misma que pusiste en tu archivo <code>middleware.ts</code>.
-        </p>
+        <p class="site-config-help">Genera e imprime los códigos QR para tus mesas. <strong>Importante:</strong> La "Clave Secreta" debe ser exactamente la misma que pusiste en tu archivo <code>middleware.ts</code>.</p>
 
         <div class="site-config-grid">
           <div class="site-field full">
@@ -132,13 +128,32 @@
             <input type="number" id="qr-hasta" value="5" min="1" />
           </div>
         </div>
-
         <button id="generarQrBtn" class="btn-primary" style="margin-top: 15px; width: 100%;">✨ Generar Códigos QR</button>
       </section>
+      <div id="qrsContainer" class="qrs-grid"></div>
+    </main>
 
-      <div id="qrsContainer" class="qrs-grid">
-        <!-- Aquí se inyectarán los QRs generados -->
-      </div>
+    <!-- ==================== TAB: MESEROS ==================== -->
+    <main id="tabMeseros" class="admin-main hidden">
+      <section class="site-config">
+        <h2 class="site-config-title">🧑‍🍳 Control de Turnos del Personal</h2>
+        <p class="site-config-help">Aquí puedes ver la hora de entrada y salida de cada mesero.</p>
+        <button id="refreshTurnosBtn" class="btn-secondary" style="margin-bottom: 15px;">🔄 Actualizar Lista</button>
+        
+        <div style="overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+            <thead>
+              <tr style="background: var(--dark); color: white;">
+                <th style="padding: 10px; border: 1px solid var(--border);">Mesero</th>
+                <th style="padding: 10px; border: 1px solid var(--border);">Entrada</th>
+                <th style="padding: 10px; border: 1px solid var(--border);">Salida</th>
+                <th style="padding: 10px; border: 1px solid var(--border);">Estado</th>
+              </tr>
+            </thead>
+            <tbody id="turnosTableBody"></tbody>
+          </table>
+        </div>
+      </section>
     </main>
 
   </div>

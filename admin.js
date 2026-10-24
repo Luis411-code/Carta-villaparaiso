@@ -1,3 +1,7 @@
+// =====================================================
+// 🛠️ PANEL DE ADMINISTRACIÓN - VILLA PARAÍSO
+// =====================================================
+
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './supabase-config.js';
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
 import QRCode from 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/+esm';
@@ -7,6 +11,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let menuData = { categories: [] };
 let hasUnsavedChanges = false;
 
+// Elementos
 const loginScreen = document.getElementById('loginScreen');
 const adminScreen = document.getElementById('adminScreen');
 const loginForm = document.getElementById('loginForm');
@@ -24,6 +29,7 @@ const verMenuBtn = document.getElementById('verMenuBtn');
 const tabs = document.querySelectorAll('.admin-tab');
 const tabCarta = document.getElementById('tabCarta');
 const tabQrs = document.getElementById('tabQrs');
+const tabMeseros = document.getElementById('tabMeseros');
 
 // QR Elements
 const generarQrBtn = document.getElementById('generarQrBtn');
@@ -32,8 +38,11 @@ const qrSecret = document.getElementById('qr-secret');
 const qrDesde = document.getElementById('qr-desde');
 const qrHasta = document.getElementById('qr-hasta');
 
-const SECRETO_DEFAULT = 'VillaParaiso-Secreto-Muy-Dificil-De-Adivinar-2025';
+// Meseros Elements
+const turnosTableBody = document.getElementById('turnosTableBody');
+const refreshTurnosBtn = document.getElementById('refreshTurnosBtn');
 
+const SECRETO_DEFAULT = 'VillaParaiso-Secreto-Muy-Dificil-De-Advinar-2025';
 const uid = () => Math.random().toString(36).slice(2, 10);
 function markDirty() { hasUnsavedChanges = true; statusBar.classList.remove('hidden'); }
 
@@ -83,7 +92,7 @@ supabase.auth.onAuthStateChange((event, session) => {
 });
 
 // =====================================================
-// 🗂️ SISTEMA DE PESTAÑAS (TABS)
+// 🗂️ SISTEMA DE PESTAÑAS
 // =====================================================
 tabs.forEach(tab => {
   tab.onclick = () => {
@@ -91,12 +100,15 @@ tabs.forEach(tab => {
     tab.classList.add('active');
     const target = tab.dataset.tab;
 
-    if (target === 'carta') {
-      tabCarta.classList.remove('hidden');
-      tabQrs.classList.add('hidden');
-    } else {
-      tabCarta.classList.add('hidden');
-      tabQrs.classList.remove('hidden');
+    tabCarta.classList.add('hidden');
+    tabQrs.classList.add('hidden');
+    tabMeseros.classList.add('hidden');
+
+    if (target === 'carta') tabCarta.classList.remove('hidden');
+    if (target === 'qrs') tabQrs.classList.remove('hidden');
+    if (target === 'meseros') {
+      tabMeseros.classList.remove('hidden');
+      cargarTurnos();
     }
   };
 });
@@ -117,7 +129,7 @@ generarQrBtn.onclick = async () => {
   const hasta = parseInt(qrHasta.value);
 
   if (isNaN(desde) || isNaN(hasta) || desde > hasta) {
-    alert('Por favor, introduce un rango válido (la mesa "desde" debe ser menor o igual a "hasta").');
+    alert('Por favor, introduce un rango válido.');
     return;
   }
 
@@ -125,7 +137,7 @@ generarQrBtn.onclick = async () => {
   generarQrBtn.disabled = true;
   generarQrBtn.textContent = '⏳ Generando...';
 
-  const baseUrl = window.location.origin; // Obtiene https://villaparaiso.vercel.app
+  const baseUrl = window.location.origin;
 
   for (let i = desde; i <= hasta; i++) {
     const mesa = i.toString();
@@ -155,12 +167,8 @@ generarQrBtn.onclick = async () => {
 
     qrsContainer.appendChild(card);
 
-    // Generar el QR en el canvas
     await QRCode.toCanvas(canvas, url, {
-      width: 250,
-      margin: 2,
-      color: { dark: '#000000', light: '#FFFFFF' },
-      errorCorrectionLevel: 'H'
+      width: 250, margin: 2, color: { dark: '#000000', light: '#FFFFFF' }, errorCorrectionLevel: 'H'
     });
   }
 
@@ -172,20 +180,64 @@ generarQrBtn.onclick = async () => {
 // 👁️ CONFIGURAR BOTÓN "VER MENÚ"
 // =====================================================
 async function configurarBotonVerMenu() {
-  // Genera un enlace válido para la Mesa 1 usando el secreto por defecto
-  const token = await (async () => {
-    const encoder = new TextEncoder();
-    const data = encoder.encode("1" + SECRETO_DEFAULT);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 12);
-  })();
-  
+  const encoder = new TextEncoder();
+  const data = encoder.encode("1" + SECRETO_DEFAULT);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const token = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 12);
   verMenuBtn.href = `${window.location.origin}/?mesa=1&t=${token}`;
 }
 
 // =====================================================
-// 🍽️ CARGAR Y GUARDAR MENÚ (Igual que antes)
+// 🧑‍🍳 CONTROL DE TURNOS
+// =====================================================
+async function cargarTurnos() {
+  turnosTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px;">Cargando turnos...</td></tr>';
+  
+  try {
+    const { data, error } = await supabase.from('turnos').select('*').order('inicio', { ascending: false }).limit(50);
+    if (error) throw error;
+
+    if (data.length === 0) {
+      turnosTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color: #888;">No hay turnos registrados aún.</td></tr>';
+      return;
+    }
+
+    turnosTableBody.innerHTML = data.map(turno => {
+      const fechaInicio = new Date(turno.inicio);
+      const horaInicio = fechaInicio.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+      const diaInicio = fechaInicio.toLocaleDateString('es-ES');
+      
+      let horaFin = '—';
+      let estado = '🟢 Activo';
+      let colorEstado = 'var(--success)';
+      
+      if (turno.fin) {
+        horaFin = new Date(turno.fin).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+        estado = '⚪ Finalizado';
+        colorEstado = 'var(--gray)';
+      }
+
+      return `
+        <tr>
+          <td style="padding: 10px; border: 1px solid var(--border); font-weight: bold;">${turno.mesero_nombre}</td>
+          <td style="padding: 10px; border: 1px solid var(--border);">${diaInicio} a las ${horaInicio}</td>
+          <td style="padding: 10px; border: 1px solid var(--border);">${turno.fin ? horaFin : 'Trabajando...'}</td>
+          <td style="padding: 10px; border: 1px solid var(--border); color: ${colorEstado}; font-weight: bold;">${estado}</td>
+        </tr>
+      `;
+    }).join('');
+
+  } catch (err) {
+    console.error(err);
+    turnosTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color: red;">Error al cargar turnos.</td></tr>';
+  }
+}
+
+if (refreshTurnosBtn) refreshTurnosBtn.onclick = cargarTurnos;
+
+// =====================================================
+// 🍽️ CARGAR Y GUARDAR MENÚ
 // =====================================================
 async function loadMenu() {
   try {
@@ -203,13 +255,11 @@ async function loadMenu() {
 }
 
 saveBtn.addEventListener('click', async () => {
-  saveBtn.disabled = true;
-  saveBtn.textContent = 'Guardando...';
+  saveBtn.disabled = true; saveBtn.textContent = 'Guardando...';
   try {
     const { error } = await supabase.from('menu').update({ data: menuData, updated_at: new Date().toISOString() }).eq('id', 'main');
     if (error) throw error;
-    hasUnsavedChanges = false;
-    statusBar.classList.add('hidden');
+    hasUnsavedChanges = false; statusBar.classList.add('hidden');
     saveBtn.textContent = '✅ Guardado';
     setTimeout(() => { saveBtn.textContent = '💾 Guardar cambios'; }, 1800);
   } catch (err) {
@@ -259,7 +309,7 @@ function loadSiteConfig(site) {
 
 function render() {
   container.innerHTML = '';
-  if (menuData.categories.length === 0) { container.innerHTML = '<p class="empty-msg">No hay categorías. Añade una para empezar.</p>'; return; }
+  if (menuData.categories.length === 0) { container.innerHTML = '<p class="empty-msg">No hay categorías.</p>'; return; }
 
   menuData.categories.forEach((cat) => {
     const card = document.createElement('div'); card.className = 'category-card';
@@ -267,7 +317,7 @@ function render() {
     
     const iconInput = document.createElement('input'); iconInput.className = 'cat-icon-input'; iconInput.value = cat.icono || '🍽️'; iconInput.maxLength = 3; iconInput.oninput = () => { cat.icono = iconInput.value; markDirty(); };
     const nameInput = document.createElement('input'); nameInput.className = 'cat-name-input'; nameInput.value = cat.categoria || ''; nameInput.placeholder = 'Nombre de la categoría'; nameInput.oninput = () => { cat.categoria = nameInput.value; markDirty(); };
-    const delCat = document.createElement('button'); delCat.className = 'btn-danger btn-small'; delCat.textContent = '🗑️ Eliminar'; delCat.onclick = () => { if (confirm(`¿Eliminar la categoría "${cat.categoria}"?`)) { menuData.categories = menuData.categories.filter(c => c.id !== cat.id); markDirty(); render(); } };
+    const delCat = document.createElement('button'); delCat.className = 'btn-danger btn-small'; delCat.textContent = '🗑️ Eliminar'; delCat.onclick = () => { if (confirm(`¿Eliminar "${cat.categoria}"?`)) { menuData.categories = menuData.categories.filter(c => c.id !== cat.id); markDirty(); render(); } };
     
     head.append(iconInput, nameInput, delCat); card.appendChild(head);
 
@@ -285,8 +335,8 @@ function render() {
 
     const convertBtn = document.createElement('button'); convertBtn.className = 'btn-secondary btn-small'; convertBtn.style.marginTop = '12px'; convertBtn.style.width = '100%';
     if (!cat.subgrupos || cat.subgrupos.length === 0) {
-      convertBtn.textContent = '📂 Convertir en subcategorías (agrupar platos)';
-      convertBtn.onclick = () => { if (!confirm(`Esto convertirá los platos actuales de "${cat.categoria}" en un subgrupo "General". ¿Continuar?`)) return; addSubgroup(cat.id); };
+      convertBtn.textContent = '📂 Convertir en subcategorías';
+      convertBtn.onclick = () => { if (!confirm(`Convertir "${cat.categoria}" en subgrupos. ¿Continuar?`)) return; addSubgroup(cat.id); };
     } else {
       convertBtn.textContent = '+ Añadir subcategoría';
       convertBtn.onclick = () => addSubgroup(cat.id);
@@ -319,12 +369,12 @@ function renderTools(items, onRerender) {
   const btnOn = document.createElement('button'); btnOn.className = 'btn-all-on'; btnOn.textContent = '✅ Marcar todo'; btnOn.onclick = () => { items.forEach(it => it.disponible = true); markDirty(); (onRerender || render)(); }; bar.appendChild(btnOn);
   const btnOff = document.createElement('button'); btnOff.className = 'btn-all-off'; btnOff.textContent = '🚫 Desmarcar todo'; btnOff.onclick = () => { items.forEach(it => it.disponible = false); markDirty(); (onRerender || render)(); }; bar.appendChild(btnOff);
   const disponibles = items.filter(it => it.disponible !== false).length;
-  const counter = document.createElement('span'); counter.className = 'avail-counter'; counter.textContent = `${disponibles}/${items.length} disponibles`; bar.appendChild(counter);
+  const counter = document.createElement('span'); counter.className = 'avail-counter'; counter.textContent = `${disponibles}/${items.length}`; bar.appendChild(counter);
   return bar;
 }
 
 function createAvailToggle(item) {
-  const wrap = document.createElement('label'); wrap.className = 'avail-toggle'; wrap.title = 'Disponible hoy';
+  const wrap = document.createElement('label'); wrap.className = 'avail-toggle';
   const input = document.createElement('input'); input.type = 'checkbox'; input.checked = item.disponible !== false;
   input.onchange = () => {
     item.disponible = input.checked; markDirty();
@@ -332,7 +382,7 @@ function createAvailToggle(item) {
     const parentBlock = wrap.closest('.subgroup-block') || wrap.closest('.category-body');
     if (parentBlock) {
       const counter = parentBlock.querySelector('.avail-counter');
-      if (counter) { const rows = parentBlock.querySelectorAll('.item-row'); counter.textContent = `${Array.from(rows).filter(r => !r.classList.contains('unavailable')).length}/${rows.length} disponibles`; }
+      if (counter) { const rows = parentBlock.querySelectorAll('.item-row'); counter.textContent = `${Array.from(rows).filter(r => !r.classList.contains('unavailable')).length}/${rows.length}`; }
     }
   };
   const slider = document.createElement('span'); slider.className = 'avail-slider';
@@ -347,7 +397,7 @@ function renderItem(arr, item) {
   const priceInput = document.createElement('input'); priceInput.className = 'item-price-input'; priceInput.type = 'number'; priceInput.step = '0.01'; priceInput.placeholder = 'Precio'; priceInput.value = item.precio ?? 0; priceInput.oninput = () => { item.precio = parseFloat(priceInput.value) || 0; markDirty(); };
   const actions = document.createElement('div'); actions.className = 'item-actions';
   const delBtn = document.createElement('button'); delBtn.className = 'btn-danger btn-small'; delBtn.textContent = '🗑️'; delBtn.onclick = () => { if (confirm(`¿Eliminar "${item.nombre}"?`)) { const idx = arr.indexOf(item); if (idx > -1) arr.splice(idx, 1); markDirty(); render(); } }; actions.appendChild(delBtn);
-  const descInput = document.createElement('textarea'); descInput.placeholder = 'Descripción (opcional)'; descInput.value = item.descripcion || ''; descInput.rows = 2; descInput.oninput = () => { item.descripcion = descInput.value; markDirty(); };
+  const descInput = document.createElement('textarea'); descInput.placeholder = 'Descripción'; descInput.value = item.descripcion || ''; descInput.rows = 2; descInput.oninput = () => { item.descripcion = descInput.value; markDirty(); };
   row.append(toggle, nameInput, priceInput, actions, descInput);
   return row;
 }
@@ -367,7 +417,7 @@ async function optimizeImage(file) {
 
 function renderGalleryField(obj, labelText) {
   const wrap = document.createElement('div'); wrap.className = 'image-field';
-  const label = document.createElement('label'); label.textContent = `📸 ${labelText} (Carrusel)`; wrap.appendChild(label);
+  const label = document.createElement('label'); label.textContent = `📸 ${labelText}`; wrap.appendChild(label);
 
   if (!obj.imagenes) { obj.imagenes = obj.imagen ? [obj.imagen] : []; delete obj.imagen; }
 
@@ -385,7 +435,7 @@ function renderGalleryField(obj, labelText) {
   renderThumbnails(); wrap.appendChild(previewContainer);
 
   const dropZone = document.createElement('div'); dropZone.className = 'drop-zone';
-  dropZone.innerHTML = `<span class="drop-icon">📤</span><span class="drop-text">Añadir foto al carrusel</span>`;
+  dropZone.innerHTML = `<span class="drop-icon">📤</span><span class="drop-text">Añadir foto</span>`;
   const fileInput = document.createElement('input'); fileInput.type = 'file'; fileInput.accept = 'image/*'; dropZone.appendChild(fileInput);
   
   dropZone.onclick = () => fileInput.click();
@@ -401,7 +451,7 @@ function renderGalleryField(obj, labelText) {
       obj.imagenes.push(data.publicUrl);
       markDirty(); renderThumbnails();
     } catch (err) { alert('Error al subir: ' + err.message); }
-    finally { dropZone.classList.remove('uploading'); dropZone.querySelector('.drop-text').textContent = 'Añadir foto al carrusel'; fileInput.value = ''; }
+    finally { dropZone.classList.remove('uploading'); dropZone.querySelector('.drop-text').textContent = 'Añadir foto'; fileInput.value = ''; }
   };
   wrap.appendChild(dropZone);
   return wrap;

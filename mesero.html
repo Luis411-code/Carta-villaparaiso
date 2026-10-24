@@ -6,24 +6,36 @@
   <title>Mesero · Villa Paraíso</title>
   <link rel="icon" type="image/png" href="img/logo.png" />
   <link rel="manifest" href="mesero-manifest.json" />
-  <meta name="theme-color" content="#0f2c2c" />
+  <meta name="theme-color" content="#2E7D32" />
   <link rel="stylesheet" href="mesero.css" />
   <link href="https://fonts.bunny.net/css?family=cinzel:400,600,700|poppins:300,400,500,600,700" rel="stylesheet" />
 </head>
 <body>
 
-  <!-- ============ LOGIN ============ -->
+  <!-- ============ LOGIN / REGISTRO ============ -->
   <div id="loginScreen" class="login-screen">
     <div class="login-card">
       <img src="img/logo.png" alt="Logo" class="login-logo" />
-      <h1>Panel del Mesero</h1>
+      <h1 id="authTitle">Iniciar Sesión</h1>
       <p class="login-sub">Villa Paraíso Guardalavaca</p>
 
       <form id="loginForm">
+        <!-- Campo de Nombre (oculto por defecto, visible en registro) -->
+        <div id="nombreField" style="display: none; width: 100%;">
+          <input type="text" id="nombre" placeholder="Tu nombre completo" style="width: 100%; padding: 14px 16px; border: 2px solid var(--border); border-radius: 10px; font-family: inherit; font-size: 0.95rem; margin-bottom: 12px;" />
+        </div>
+        
         <input type="email" id="email" placeholder="Correo electrónico" required />
         <input type="password" id="password" placeholder="Contraseña" required />
-        <button type="submit" class="btn-primary">Iniciar sesión</button>
+        
+        <button type="submit" class="btn-primary" id="authBtn">Entrar</button>
       </form>
+      
+      <p style="margin-top: 15px; font-size: 0.85rem; color: var(--gray);">
+        <span id="authToggleText">¿Eres mesero nuevo?</span> 
+        <a href="#" id="authToggleLink" style="color: var(--primary); font-weight: bold; text-decoration: none;">Regístrate aquí</a>
+      </p>
+      
       <p id="loginError" class="login-error"></p>
     </div>
   </div>
