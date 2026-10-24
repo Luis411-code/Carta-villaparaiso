@@ -138,12 +138,26 @@ function actualizarUI() {
 // ==================== TOAST Y ENVÍO ====================
 let toastTimer = null;
 function mostrarToast(titulo, mensaje, esError = false) {
+  const toast = document.getElementById('toast');
+  const toastTitle = document.getElementById('toastTitle');
+  const toastMsg = document.getElementById('toastMsg');
+
+  // Si los elementos del toast no existen, no hacemos nada.
+  if (!toast || !toastTitle || !toastMsg) {
+    console.error('No se encontraron los elementos del toast en el DOM.');
+    return;
+  }
+
   toastTitle.textContent = titulo;
   toastMsg.textContent = mensaje;
+  
   toast.classList.toggle('toast-error', esError);
   toast.classList.remove('hidden');
+
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toast.classList.add('hidden'), 3500);
+  toastTimer = setTimeout(() => {
+    toast.classList.add('hidden');
+  }, 3500);
 }
 
 async function enviarPedido() {
